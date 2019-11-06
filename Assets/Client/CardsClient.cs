@@ -1,72 +1,129 @@
-﻿using System.Net;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Security.Cryptography;
 using Unity.Collections;
-using UnityEngine;
 using Unity.Networking.Transport;
-
+using UnityEngine;
 using DefaultNetworkDriver = Unity.Networking.Transport.GenericNetworkDriver<Unity.Networking.Transport.IPv4UDPSocket, Unity.Networking.Transport.DefaultPipelineStageCollection>;
 
 public class CardsClient : MonoBehaviour
 {
-    public DefaultNetworkDriver m_Driver;
-    public NetworkConnection m_Connection;
-    public bool m_Done;
+    public static CardsClient Instance { get; private set; }
 
-    void Start()
+    State m_state = State.Initializing;
+    public State State
     {
-        m_Driver = new DefaultNetworkDriver(new INetworkParameter[0]);
-        m_Connection = default;
-
-        var endpoint = new IPEndPoint(IPAddress.Loopback, 9000);
-        m_Connection = m_Driver.Connect(endpoint);
+        get => m_state;
+        private set
+        {
+            OnStateChange?.Invoke(m_state, value);
+            m_state = value;
+        }
     }
 
-    public void OnDestroy()
+    public static event Action<byte, byte[]> OnDataReceived; // id, data
+    public static event Action OnConnected;
+    public static event Action OnDisconnected;
+    public static event Action<State, State> OnStateChange; // old, new
+
+    DefaultNetworkDriver m_driver;
+    NetworkConnection m_connection;
+    NetworkPipeline m_pipeline;
+
+    void Awake()
     {
-        m_Driver.Dispose();
+        // Singleton
+        if (Instance != null)
+        {
+            Destroy(this);
+            return;
+        }
+        Instance = this;
+
+        // Init connections
+        m_driver = new DefaultNetworkDriver(new INetworkParameter[0]);
+        
+        // Corresponds to server default pipeline
+        m_pipeline = m_driver.CreatePipeline();
+        State = State.Initialized;
+    }
+
+    // TODO: Remove this
+    void Start()
+    {
+        var ep = NetworkEndPoint.LoopbackIpv4;
+        ep.Port = 9000;
+        ConnectTo(ep);
+    }
+
+    // Connect to a certain endpoint
+    public void ConnectTo(NetworkEndPoint endpoint)
+    {
+        State = State.Connecting;
+        m_connection = m_driver.Connect(endpoint);
+    }
+
+    void OnDestroy()
+    {
+        m_driver.Dispose();
     }
 
     void Update()
     {
-        m_Driver.ScheduleUpdate().Complete();
+        // Update the network driver.
+        m_driver.ScheduleUpdate().Complete();
 
-        if (!m_Connection.IsCreated)
+        // Idle if we aren't connected yet.
+        if (!m_connection.IsCreated) return;
+
+        while (true)
         {
-            if (!m_Done)
-                Debug.Log("Something went wrong during connect");
-            return;
-        }
-
-        DataStreamReader stream;
-        NetworkEvent.Type cmd;
-
-        while ((cmd = m_Connection.PopEvent(m_Driver, out stream)) !=
-               NetworkEvent.Type.Empty)
-        {
-            if (cmd == NetworkEvent.Type.Connect)
+            // Read the next event
+            switch (m_connection.PopEvent(m_driver, out var stream))
             {
-                Debug.Log("We are now connected to the server");
+                case NetworkEvent.Type.Empty:
+                    return;
+                case NetworkEvent.Type.Data:
+                    var readerCtx = default(DataStreamReader.Context);
+                    var data = new byte[stream.Length - 1];
+                    
+                    var id = stream.ReadByte(ref readerCtx);
+                    stream.ReadBytesIntoArray(ref readerCtx, ref data, data.Length);
 
-                var value = 1;
-                using (var writer = new DataStreamWriter(4, Allocator.Temp))
-                {
-                    writer.Write(value);
-                    m_Connection.Send(m_Driver, writer);
-                }
-            }
-            else if (cmd == NetworkEvent.Type.Data)
-            {
-                var readerCtx = default(DataStreamReader.Context);
-                uint value = stream.ReadUInt(ref readerCtx);
-                Debug.Log("Got the value = " + value + " back from the server");
-                m_Done = true;
-                m_Connection.Disconnect(m_Driver);
-                m_Connection = default(NetworkConnection);
-            }
-            else if (cmd == NetworkEvent.Type.Disconnect)
-            {
-                Debug.Log("Client got disconnected from server");
-                m_Connection = default(NetworkConnection);
+                    OnDataReceived?.Invoke(id, data);
+                    break;
+                case NetworkEvent.Type.Connect:
+                    State = State.Connected;
+                    OnConnected?.Invoke();
+
+                    Debug.Log("CLI: Connected");
+                    break;
+                case NetworkEvent.Type.Disconnect:
+                    State = State.Disconnected;
+                    OnDisconnected?.Invoke();
+
+                    Debug.Log("CLI: Disconnected");
+                    m_connection = default;
+                    break;
+                default:
+                    break;
             }
         }
     }
+
+    // Send data to the server
+    public void Send(int amt, Action<DataStreamWriter> writeData)
+    {
+        using (var writer = new DataStreamWriter(amt, Allocator.Temp))
+        {
+            writeData(writer);
+            m_connection.Send(m_driver, writer);
+        }
+    }
+}
+
+public enum State
+{
+    Initializing, Initialized, Connecting, Connected, Disconnected
 }

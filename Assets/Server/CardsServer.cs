@@ -1,92 +1,113 @@
-﻿using System.Net;
-using UnityEngine;
-
-using Unity.Networking.Transport;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using Unity.Collections;
+using Unity.Networking.Transport;
+using UnityEngine;
 using UnityEngine.Assertions;
-
 using DefaultNetworkDriver = Unity.Networking.Transport.GenericNetworkDriver<Unity.Networking.Transport.IPv4UDPSocket, Unity.Networking.Transport.DefaultPipelineStageCollection>;
 
-public class ServerBehaviour : MonoBehaviour
+public class CardsServer : MonoBehaviour
 {
-    public DefaultNetworkDriver m_Driver;
-    public NetworkPipeline m_Pipeline;
-    private NativeList<NetworkConnection> m_Connections;
+    DefaultNetworkDriver m_driver;
+    NetworkPipeline m_pipeline;
+    NativeList<NetworkConnection> m_connections;
 
-    void Start()
+    public static event Action<byte, byte[], int> OnDataReceived; // conn, id, data
+    public static event Action<int> OnConnected;
+    public static event Action<int> OnDisconnected;
+
+    void Awake()
     {
-        m_Driver = new DefaultNetworkDriver(new INetworkParameter[0]);
+        m_driver = new DefaultNetworkDriver(new INetworkParameter[0]);
 
-        m_Pipeline = m_Driver.CreatePipeline();
+        m_pipeline = m_driver.CreatePipeline();
 
         var ip = NetworkEndPoint.AnyIpv4;
         ip.Port = 9000;
 
-        if (m_Driver.Bind(ip) != 0)
-            Debug.Log("Failed to bind to port 9000");
-        else
-            m_Driver.Listen();
+        if (m_driver.Bind(ip) != 0) Debug.LogError("SRV: Failed to bind to port 9000");
+        else m_driver.Listen();
 
-        m_Connections = new NativeList<NetworkConnection>(16, Allocator.Persistent);
+        m_connections = new NativeList<NetworkConnection>(16, Allocator.Persistent);
     }
 
-    public void OnDestroy()
+    void OnDestroy()
     {
-        m_Driver.Dispose();
-        m_Connections.Dispose();
+        m_driver.Dispose();
+        m_connections.Dispose();
     }
 
     void Update()
     {
-        m_Driver.ScheduleUpdate().Complete();
+        m_driver.ScheduleUpdate().Complete();
 
-        // CleanUpConnections
-        for (int i = 0; i < m_Connections.Length; i++)
+        // Clean up connections
+        for (var i = 0; i < m_connections.Length; i++)
         {
-            if (!m_Connections[i].IsCreated)
-            {
-                m_Connections.RemoveAtSwapBack(i);
-                --i;
-            }
+            if (m_connections[i].IsCreated) continue;
+            m_connections.RemoveAtSwapBack(i);
+            i--;
         }
-        // AcceptNewConnections
+
+        // Accept new connections
         NetworkConnection c;
-        while ((c = m_Driver.Accept()) != default(NetworkConnection))
+        while ((c = m_driver.Accept()) != default)
         {
-            m_Connections.Add(c);
-            Debug.Log("Accepted a connection");
+            m_connections.Add(c);
+            OnConnected?.Invoke(m_connections.Length-1);
+            Debug.Log($"SRV: Client {m_connections.Length-1} connected");
         }
 
-        DataStreamReader stream;
-        for (int i = 0; i < m_Connections.Length; i++)
+        // Process current connections
+        for (var i = 0; i < m_connections.Length; i++)
         {
-            if (!m_Connections[i].IsCreated)
-                Assert.IsTrue(true);
+            if (!m_connections[i].IsCreated) continue;
 
-            NetworkEvent.Type cmd;
-            while ((cmd = m_Driver.PopEventForConnection(m_Connections[i], out stream)) !=
-                   NetworkEvent.Type.Empty)
+            ProcessConnectionData(i);
+        }
+    }
+
+    void ProcessConnectionData(int conn)
+    {
+        while (true)
+        {
+            switch (m_driver.PopEventForConnection(m_connections[conn], out var stream))
             {
-                if (cmd == NetworkEvent.Type.Data)
-                {
+                case NetworkEvent.Type.Data:
                     var readerCtx = default(DataStreamReader.Context);
-                    uint number = stream.ReadUInt(ref readerCtx);
+                    var data = new byte[stream.Length - 1];
 
-                    Debug.Log("Got " + number + " from the Client adding + 2 to it.");
-                    number += 2;
+                    var id = stream.ReadByte(ref readerCtx);
+                    stream.ReadBytesIntoArray(ref readerCtx, ref data, data.Length);
 
-                    using (var writer = new DataStreamWriter(4, Allocator.Temp))
-                    {
-                        writer.Write(number);
-                        m_Driver.Send(m_Pipeline, m_Connections[i], writer);
-                    }
-                }
-                else if (cmd == NetworkEvent.Type.Disconnect)
-                {
-                    Debug.Log("Client disconnected from server");
-                    m_Connections[i] = default(NetworkConnection);
-                }
+                    OnDataReceived?.Invoke(id, data, conn);
+                    break;
+
+                case NetworkEvent.Type.Disconnect:
+                    OnDisconnected?.Invoke(conn);
+
+                    Debug.Log($"SRV: Client {conn} disconnected");
+                    m_connections[conn] = default;
+                    break;
+
+                case NetworkEvent.Type.Empty:
+                    return;
+                case NetworkEvent.Type.Connect:
+                    break;
+                default:
+                    break;
             }
+        }
+    }
+
+    // Send data to the server
+    public void Send(int connId, int amt, Action<DataStreamWriter> writeData)
+    {
+        Debug.Log($"SRV: Sending {amt} bytes to {connId}");
+        using (var writer = new DataStreamWriter(amt, Allocator.Temp))
+        {
+            writeData(writer);
+            m_connections[connId].Send(m_driver, writer);
         }
     }
 }
