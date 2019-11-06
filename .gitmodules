@@ -1,0 +1,3 @@
+[submodule "Packages/multiplayer"]
+	path = Packages/multiplayer
+	url = https://github.com/Unity-Technologies/multiplayer
