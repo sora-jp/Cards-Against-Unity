@@ -1,27 +1,40 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Unity.Collections;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class ServerImplementation : EventImplementor
 {
-    readonly List<ClientData> m_clients = new List<ClientData>();
+    public static ServerImplementation Instance { get; private set; }
+
+    readonly List<Client> m_clients = new List<Client>();
 
     CardCollection m_cards;
 
-    public static event Action<ClientData, CardDefinition> OnCardPlayed; 
+    public static event Action<Client, CardDefinition> OnCardPlayed; 
 
     void Awake()
     {
+        if (Instance != null)
+        {
+            Destroy(this);
+            return;
+        }
+        Instance = this;
         AttachEvent<CardsServer>(nameof(CardsServer.OnDataReceived));
-        CardsServer.OnConnected += idx => m_clients.Insert(idx, new ClientData(idx));
+        CardsServer.OnConnected += OnClientConnected;
         CardsServer.OnDisconnected += idx => m_clients.RemoveAtSwapBack(idx);
 
         m_cards = JsonConvert.DeserializeObject<CardCollection>(Resources.Load<TextAsset>("cards").text);
-        Debug.Log(m_cards.BlackCards[0]);
-        Debug.Log(m_cards.WhiteCards[0]);
+    }
+
+    void OnClientConnected(int idx)
+    {
+        var cli = new Client(idx);
+        m_clients.Insert(idx, cli);
+        cli.DrawCards(10);
     }
 
     [Message(MessageType.RpcPlayCard)]
@@ -34,6 +47,19 @@ public class ServerImplementation : EventImplementor
             OnCardPlayed?.Invoke(client, card);
         }
     }
+
+    public CardDefinition GetRandomCard(bool white)
+    {
+        return (white ? m_cards.WhiteCards :  m_cards.BlackCards).RandomItem();
+    }
+}
+
+static class ListE
+{
+    public static T RandomItem<T>(this List<T> list)
+    {
+        return list[Random.Range(0, list.Count)];
+    }
 }
 
 class CardCollection
@@ -42,10 +68,20 @@ class CardCollection
     [JsonProperty(PropertyName = "blackCards")] public List<CardDefinition> BlackCards;
 }
 
-public class ClientData
+public class Client
 {
     public int id;
     public List<CardDefinition> hand = new List<CardDefinition>();
 
-    public ClientData(int id) => this.id = id;
+    public Client(int id) => this.id = id;
+
+    public void DrawCards(int amt)
+    {
+        for (int i = 0; i < amt; i++) DrawCard();
+    }
+
+    public void DrawCard()
+    {
+        CardsServer.Instance.Send(id, MessageType.CmdDrawCard, ServerImplementation.Instance.GetRandomCard(true));
+    }
 }
