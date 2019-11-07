@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Fasterflect;
@@ -6,34 +7,16 @@ using UnityEngine;
 
 public class ClientImplementation : EventImplementor
 {
+    public static event Action<CardDefinition> OnDrawCard; 
+
     void Awake()
     {
         AttachEvent<CardsClient>(nameof(CardsClient.OnDataReceived));
     }
 
-    void Update()
+    [Message(MessageType.CmdDrawCard)]
+    void DrawCard(CardDefinition card)
     {
-        if (Input.GetKeyDown(KeyCode.A)) CardsClient.Instance.Send(MessageType.Test, new TestMessageData {Value = 5});
-    }
-
-    [Message(MessageType.Test)]
-    void Handle(TestMessageData data)
-    {
-        Debug.Log($"CLI: Server sent data {data.Value}");
-    }
-}
-
-public struct TestMessageData : IMessageData
-{
-    public int Value { get; set; }
-
-    public void FromBytes(BinaryReader reader)
-    {
-        Value = reader.ReadInt32();
-    }
-
-    public void Write(BinaryWriter writer)
-    {
-        writer.Write(Value);
+        OnDrawCard?.Invoke(card);
     }
 }
