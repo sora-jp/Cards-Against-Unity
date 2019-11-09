@@ -47,7 +47,7 @@ public class CardsClient : MonoBehaviour
         m_driver = new DefaultNetworkDriver(new INetworkParameter[0]);
         
         // Corresponds to server default pipeline
-        m_pipeline = m_driver.CreatePipeline();
+        m_pipeline = m_driver.CreatePipeline(typeof(NullPipelineStage));
         State = State.Initialized;
     }
 

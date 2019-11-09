@@ -5,5 +5,9 @@ using UnityEngine;
 
 public enum MessageType
 {
-    CmdDrawCard, RpcPlayCard
+    CmdDrawCard, 
+    RpcPlayCard, 
+    CmdSyncGameState,
+    CmdHeartbeat,
+    RpcHeartbeatAck
 }

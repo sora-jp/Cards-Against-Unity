@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class Card : MonoBehaviour
 {
@@ -18,11 +19,6 @@ public class Card : MonoBehaviour
     }
 
     public TextMeshProUGUI text;
-
-    void Awake()
-    {
-        UpdateUi();
-    }
 
     void UpdateUi()
     {

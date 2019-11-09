@@ -3,15 +3,36 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Net;
 using Newtonsoft.Json;
 using UnityEngine;
 
+[Serializable]
 public struct CardDefinition : IMessageData
 {
-    [JsonProperty(PropertyName = "text")] public string CardText { get; set; }
-    [DefaultValue(1), JsonProperty(PropertyName = "pick", DefaultValueHandling = DefaultValueHandling.Populate)] public int Pick { get; set; }
+    [SerializeField] string _cardText;
+    public string CardText => _cardText;
+    [SerializeField] int _pick;
+    public int Pick => _pick;
 
-    public static implicit operator CardDefinition(string s) => new CardDefinition {CardText = s, Pick = 1};
+    public static implicit operator CardDefinition(string s) => new CardDefinition(s);
+
+    [JsonConstructor]
+    public CardDefinition(string text, int pick = 1)
+    {
+        _cardText = Escape(text);
+        _pick = pick;
+    }
+
+    static string Escape(string text)
+    {
+        text = text.Replace("<small>", "<size=16>");
+        text = text.Replace("</small>", "</size>");
+        text = text.Replace("<br/>", "\n");
+        text = text.Replace("_", "_____");
+        text = WebUtility.HtmlDecode(text);
+        return text;
+    }
 
     public override string ToString()
     {
@@ -20,13 +41,13 @@ public struct CardDefinition : IMessageData
 
     public void FromBytes(BinaryReader reader)
     {
-        Pick = reader.ReadInt32();
-        CardText = reader.ReadString();
+        _pick = reader.ReadInt32();
+        _cardText = reader.ReadString();
     }
 
     public void Write(BinaryWriter writer)
     {
-        writer.Write(Pick);
-        writer.Write(CardText);
+        writer.Write(_pick);
+        writer.Write(_cardText);
     }
 }

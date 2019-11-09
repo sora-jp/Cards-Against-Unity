@@ -31,13 +31,15 @@ public class CardsServer : MonoBehaviour
 
         m_driver = new DefaultNetworkDriver(new INetworkParameter[0]);
 
-        m_pipeline = m_driver.CreatePipeline();
+        m_pipeline = m_driver.CreatePipeline(typeof(NullPipelineStage));
 
         var ip = NetworkEndPoint.AnyIpv4;
         ip.Port = 9000;
 
         if (m_driver.Bind(ip) != 0) Debug.LogError("SRV: Failed to bind to port 9000");
         else m_driver.Listen();
+
+        Debug.Log("SRV: Server started on port 9000");
 
         m_connections = new NativeList<NetworkConnection>(16, Allocator.Persistent);
     }
