@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 using Unity.Collections;
 using UnityEngine;
@@ -10,10 +11,14 @@ public class ServerImplementation : EventImplementor
 {
     public static ServerImplementation Instance { get; private set; }
 
-    readonly List<Client> m_clients = new List<Client>();
+    [SerializeField]
+    List<Client> m_clients = new List<Client>();
 
+    [SerializeField]
     CardCollection m_cards;
-    readonly GameState m_state = new GameState();
+
+    [SerializeField]
+    GameState m_state = new GameState();
 
     public static event Action<Client, CardDefinition> OnCardPlayed; 
 
@@ -25,14 +30,23 @@ public class ServerImplementation : EventImplementor
             return;
         }
         Instance = this;
+
+        Random.InitState(DateTime.Now.Millisecond);
+
         AttachEvent<CardsServer>(nameof(CardsServer.OnDataReceived));
         CardsServer.OnConnected += OnClientConnected;
-        CardsServer.OnDisconnected += idx => m_clients.RemoveAtSwapBack(idx);
+        CardsServer.OnDisconnected += OnClientDisconnect;
 
         m_cards = JsonConvert.DeserializeObject<CardCollection>(Resources.Load<TextAsset>("cards").text);
         m_state.currentBlackCard = GetRandomCard(false);
 
         StartCoroutine(_heartbeat());
+    }
+
+    void OnClientDisconnect(int idx)
+    {
+        CardsServer.Instance.SendAllExcept(idx, MessageType.CmdOnClientDisconnect, new ClientData(m_clients[idx].guid));
+        m_clients.RemoveAtSwapBack(idx);
     }
 
     IEnumerator _heartbeat()
@@ -48,30 +62,27 @@ public class ServerImplementation : EventImplementor
     {
         var cli = new Client(idx);
         m_clients.Insert(idx, cli);
+        cli.SendId();
         cli.SyncGameState(m_state);
         cli.DrawCards(10);
     }
 
     [Message(MessageType.RpcPlayCard)]
-    void Handle(CardDefinition card, int clientIdx)
+    void ClientPlayedCard(CardDefinition card, int clientIdx)
     {
         var client = m_clients[clientIdx];
+        if (!client.hand.Remove(card)) return;
+        
+        client.currentCards.Add(card);
+        OnCardPlayed?.Invoke(client, card);
 
-        if (client.hand.Remove(card))
-        {
-            client.currentCards.Add(card);
-            OnCardPlayed?.Invoke(client, card);
-        }
+        CardsServer.Instance.SendAllExcept(clientIdx, MessageType.CmdOnClientPlayedCard, new ClientData(client.guid));
 
-        bool everyoneDone = true;
-        foreach (var cli in m_clients)
-        {
-            everyoneDone &= client.currentCards.Count >= m_state.currentBlackCard.Pick;
-        }
+        var everyoneDone = m_clients.All(cli => cli.currentCards.Count >= m_state.currentBlackCard.Pick);
 
         if (everyoneDone)
         {
-            
+            CardsServer.Instance.SendAll(MessageType.CmdBeginVoting, new EmptyData());
         }
     }
 
@@ -81,7 +92,7 @@ public class ServerImplementation : EventImplementor
     }
 }
 
-static class ListE
+internal static class ListE
 {
     public static T RandomItem<T>(this List<T> list)
     {
@@ -89,19 +100,26 @@ static class ListE
     }
 }
 
-class CardCollection
+[Serializable]
+internal class CardCollection
 {
     [JsonProperty(PropertyName = "whiteCards")] public List<CardDefinition> WhiteCards;
     [JsonProperty(PropertyName = "blackCards")] public List<CardDefinition> BlackCards;
 }
 
+[Serializable]
 public class Client
 {
     public int id;
+    public int guid;
     public List<CardDefinition> hand = new List<CardDefinition>();
-    public List<CardDefinition> currentCards;
+    public List<CardDefinition> currentCards = new List<CardDefinition>();
 
-    public Client(int id) => this.id = id;
+    public Client(int id)
+    {
+        this.id = id;
+        guid = Random.Range(0, int.MaxValue);
+    }
 
     public void DrawCards(int amt)
     {
@@ -110,7 +128,9 @@ public class Client
 
     public void DrawCard()
     {
-        CardsServer.Instance.Send(id, MessageType.CmdDrawCard, ServerImplementation.Instance.GetRandomCard(true));
+        var card = ServerImplementation.Instance.GetRandomCard(true);
+        CardsServer.Instance.Send(id, MessageType.CmdDrawCard, card);
+        hand.Add(card);
     }
 
     public void SyncGameState(GameState state)
@@ -120,6 +140,11 @@ public class Client
 
     public void Heartbeat()
     {
-        CardsServer.Instance.Send(id, MessageType.CmdHeartbeat, new EmptyData());
+        CardsServer.Instance.Send(id, MessageType.CmdHeartbeat, new EmptyData(), false);
+    }
+
+    public void SendId()
+    {
+        CardsServer.Instance.Send(id, MessageType.CmdSetGuid, new ClientData(guid));
     }
 }

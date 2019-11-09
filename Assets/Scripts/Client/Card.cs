@@ -19,9 +19,18 @@ public class Card : MonoBehaviour
     }
 
     public TextMeshProUGUI text;
+    public GameObject frontFace;
+    public GameObject backFace;
 
     void UpdateUi()
     {
         text.SetText(CardDef.CardText);
+    }
+
+    void Update()
+    {
+        var backFacing = transform.localRotation.eulerAngles.y > 90 && transform.localRotation.eulerAngles.y < 270;
+        frontFace.SetActive(!backFacing);
+        backFace.SetActive(backFacing);
     }
 }

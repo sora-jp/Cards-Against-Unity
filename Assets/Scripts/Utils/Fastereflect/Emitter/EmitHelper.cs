@@ -1846,7 +1846,7 @@ namespace Fasterflect.Emitter
 		/// Calls ILGenerator.Emit(<see cref="OpCodes.Ldarg"/>, short) that
 		/// loads an argument (referenced by a specified index value) onto the stack.
 		/// </summary>
-		/// <param name="index">Index of the argument that is pushed onto the stack.</param>
+		/// <param name="index">Guid of the argument that is pushed onto the stack.</param>
 		/// <seealso cref="OpCodes.Ldarg">OpCodes.Ldarg</seealso>
 		/// <seealso cref="System.Reflection.Emit.ILGenerator.Emit(OpCode,short)">ILGenerator.Emit</seealso>
 		public EmitHelper ldarg( short index )
@@ -1860,7 +1860,7 @@ namespace Fasterflect.Emitter
 		/// ILGenerator.Emit(<see cref="OpCodes.Ldarg_S"/>, byte) that
 		/// loads an argument (referenced by a specified index value) onto the stack.
 		/// </summary>
-		/// <param name="index">Index of the argument that is pushed onto the stack.</param>
+		/// <param name="index">Guid of the argument that is pushed onto the stack.</param>
 		/// <seealso cref="OpCodes.Ldarg">OpCodes.Ldarg</seealso>
 		/// <seealso cref="System.Reflection.Emit.ILGenerator.Emit(OpCode,short)">ILGenerator.Emit</seealso>
 		public EmitHelper ldarg( int index )
@@ -1903,7 +1903,7 @@ namespace Fasterflect.Emitter
 		/// Calls ILGenerator.Emit(<see cref="OpCodes.Ldarga"/>, short) that
 		/// load an argument address onto the evaluation stack.
 		/// </summary>
-		/// <param name="index">Index of the address addr of the argument that is pushed onto the stack.</param>
+		/// <param name="index">Guid of the address addr of the argument that is pushed onto the stack.</param>
 		/// <seealso cref="OpCodes.Ldarga">OpCodes.Ldarga</seealso>
 		/// <seealso cref="System.Reflection.Emit.ILGenerator.Emit(OpCode,short)">ILGenerator.Emit</seealso>
 		public EmitHelper ldarga( short index )
@@ -1916,7 +1916,7 @@ namespace Fasterflect.Emitter
 		/// Calls ILGenerator.Emit(<see cref="OpCodes.Ldarga_S"/>, byte) that
 		/// load an argument address, in short form, onto the evaluation stack.
 		/// </summary>
-		/// <param name="index">Index of the address addr of the argument that is pushed onto the stack.</param>
+		/// <param name="index">Guid of the address addr of the argument that is pushed onto the stack.</param>
 		/// <seealso cref="OpCodes.Ldarga_S">OpCodes.Ldarga_S</seealso>
 		/// <seealso cref="System.Reflection.Emit.ILGenerator.Emit(OpCode,byte)">ILGenerator.Emit</seealso>
 		public EmitHelper ldarga_s( byte index )
@@ -1928,7 +1928,7 @@ namespace Fasterflect.Emitter
 		/// <summary>
 		/// Load an argument address onto the evaluation stack.
 		/// </summary>
-		/// <param name="index">Index of the address addr of the argument that is pushed onto the stack.</param>
+		/// <param name="index">Guid of the address addr of the argument that is pushed onto the stack.</param>
 		public EmitHelper ldarga( int index )
 		{
 			if( index <= byte.MaxValue )
@@ -2011,7 +2011,7 @@ namespace Fasterflect.Emitter
 		/// Calls ILGenerator.Emit(<see cref="OpCodes.Ldarg_S"/>, byte) that
 		/// loads the argument (referenced by a specified short form index) onto the evaluation stack.
 		/// </summary>
-		/// <param name="index">Index of the argument value that is pushed onto the stack.</param>
+		/// <param name="index">Guid of the argument value that is pushed onto the stack.</param>
 		/// <seealso cref="OpCodes.Ldarg_S">OpCodes.Ldarg_S</seealso>
 		/// <seealso cref="System.Reflection.Emit.ILGenerator.Emit(OpCode,byte)">ILGenerator.Emit</seealso>
 		public EmitHelper ldarg_s( byte index )
@@ -2772,7 +2772,7 @@ namespace Fasterflect.Emitter
 		/// Calls ILGenerator.Emit(<see cref="OpCodes.Ldloc"/>, short) that
 		/// load an argument address onto the evaluation stack.
 		/// </summary>
-		/// <param name="index">Index of the local variable value pushed onto the stack.</param>
+		/// <param name="index">Guid of the local variable value pushed onto the stack.</param>
 		/// <seealso cref="OpCodes.Ldloc">OpCodes.Ldloc</seealso>
 		/// <seealso cref="System.Reflection.Emit.ILGenerator.Emit(OpCode,short)">ILGenerator.Emit</seealso>
 		public EmitHelper ldloc( short index )
@@ -2798,7 +2798,7 @@ namespace Fasterflect.Emitter
 		/// Calls ILGenerator.Emit(<see cref="OpCodes.Ldloca"/>, short) that
 		/// loads the address of the local variable at a specific index onto the evaluation stack.
 		/// </summary>
-		/// <param name="index">Index of the local variable.</param>
+		/// <param name="index">Guid of the local variable.</param>
 		/// <seealso cref="OpCodes.Ldloca">OpCodes.Ldloca</seealso>
 		/// <seealso cref="System.Reflection.Emit.ILGenerator.Emit(OpCode,short)">ILGenerator.Emit</seealso>
 		public EmitHelper ldloca( short index )
@@ -2811,7 +2811,7 @@ namespace Fasterflect.Emitter
 		/// Calls ILGenerator.Emit(<see cref="OpCodes.Ldloca_S"/>, byte) that
 		/// loads the address of the local variable at a specific index onto the evaluation stack, short form.
 		/// </summary>
-		/// <param name="index">Index of the local variable.</param>
+		/// <param name="index">Guid of the local variable.</param>
 		/// <seealso cref="OpCodes.Ldloca_S">OpCodes.Ldloca_S</seealso>
 		/// <seealso cref="System.Reflection.Emit.ILGenerator.Emit(OpCode,byte)">ILGenerator.Emit</seealso>
 		public EmitHelper ldloca_s( byte index )
@@ -2897,7 +2897,7 @@ namespace Fasterflect.Emitter
 		/// Calls ILGenerator.Emit(<see cref="OpCodes.Ldloc_S"/>, byte) that
 		/// loads the local variable at a specific index onto the evaluation stack, short form.
 		/// </summary>
-		/// <param name="index">Index of the local variable.</param>
+		/// <param name="index">Guid of the local variable.</param>
 		/// <seealso cref="OpCodes.Ldloc_S">OpCodes.Ldloc_S</seealso>
 		/// <seealso cref="System.Reflection.Emit.ILGenerator.Emit(OpCode,byte)">ILGenerator.Emit</seealso>
 		public EmitHelper ldloc_s( byte index )

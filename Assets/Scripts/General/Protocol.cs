@@ -9,5 +9,10 @@ public enum MessageType
     RpcPlayCard, 
     CmdSyncGameState,
     CmdHeartbeat,
-    RpcHeartbeatAck
+    RpcHeartbeatAck,
+    CmdOnClientDisconnect,
+    CmdBeginVoting,
+    RpcVoteOnClient,
+    CmdOnClientPlayedCard,
+    CmdSetGuid
 }

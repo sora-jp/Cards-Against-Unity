@@ -6,22 +6,23 @@ using System.IO;
 using System.Net;
 using Newtonsoft.Json;
 using UnityEngine;
+// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 
 [Serializable]
 public struct CardDefinition : IMessageData
 {
-    [SerializeField] string _cardText;
-    public string CardText => _cardText;
-    [SerializeField] int _pick;
-    public int Pick => _pick;
+    [SerializeField] string m_cardText;
+    public string CardText => m_cardText;
+    [SerializeField] int m_pick;
+    public int Pick => m_pick;
 
     public static implicit operator CardDefinition(string s) => new CardDefinition(s);
 
     [JsonConstructor]
     public CardDefinition(string text, int pick = 1)
     {
-        _cardText = Escape(text);
-        _pick = pick;
+        m_cardText = Escape(text);
+        m_pick = pick;
     }
 
     static string Escape(string text)
@@ -41,13 +42,13 @@ public struct CardDefinition : IMessageData
 
     public void FromBytes(BinaryReader reader)
     {
-        _pick = reader.ReadInt32();
-        _cardText = reader.ReadString();
+        m_pick = reader.ReadInt32();
+        m_cardText = reader.ReadString();
     }
 
     public void Write(BinaryWriter writer)
     {
-        writer.Write(_pick);
-        writer.Write(_cardText);
+        writer.Write(m_pick);
+        writer.Write(m_cardText);
     }
 }

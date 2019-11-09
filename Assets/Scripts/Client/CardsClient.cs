@@ -115,9 +115,9 @@ public class CardsClient : MonoBehaviour
     }
 
     // Send data to the server
-    public void Send<T>(T id, IMessageData data) where T:Enum
+    public void Send<T>(T id, IMessageData data, bool log = true) where T:Enum
     {
-        Debug.Log($"CLI: Sending data to server");
+        if (log) Debug.Log($"CLI: Sending {id.ToString()} to server");
 
         using (var stream = new MemoryStream(32))
         {

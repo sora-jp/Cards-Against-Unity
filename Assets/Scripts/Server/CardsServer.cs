@@ -114,9 +114,9 @@ public class CardsServer : MonoBehaviour
     }
 
     // Send data to a client
-    public void Send<T>(int connId, T id, IMessageData data) where T:Enum
+    public void Send<T>(int connId, T id, IMessageData data, bool log = true) where T:Enum
     {
-        Debug.Log($"SRV: Sending data to client {connId}");
+        if (log) Debug.Log($"SRV: Sending {id.ToString()} to client {connId}");
 
         using (var stream = new MemoryStream(32))
         {
@@ -137,6 +137,20 @@ public class CardsServer : MonoBehaviour
                     }
                 }
             }
+        }
+    }
+
+    public void SendAll<T>(T id, IMessageData data, bool log = true) where T:Enum
+    {
+        for (var i = 0; i < m_connections.Length; i++) Send(i, id, data, log);
+    }
+
+    public void SendAllExcept<T>(int cli, T id, IMessageData data, bool log = true) where T:Enum
+    {
+        for (var i = 0; i < m_connections.Length; i++)
+        {
+            if (i == cli) continue;
+            Send(i, id, data, log);
         }
     }
 }

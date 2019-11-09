@@ -1,18 +1,23 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class CardDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
+    public static event Action<Card, Transform> OnCardPlayed;
+
     Vector3 offset;
     Canvas rootCanvas;
     int siblingIdx;
     Transform lastParent;
+    RectTransform cardPlayArea;
 
     void Awake()
     {
         rootCanvas = GetComponentInParent<Canvas>().rootCanvas;
+        cardPlayArea = FindObjectOfType<CardPlayArea>().GetComponent<RectTransform>();
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -33,7 +38,14 @@ public class CardDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        transform.SetParent(lastParent, true);
-        transform.SetSiblingIndex(siblingIdx);
+        if (RectTransformUtility.RectangleContainsScreenPoint(cardPlayArea, transform.position))
+        {
+            OnCardPlayed?.Invoke(GetComponent<Card>(), GetComponent<RectTransform>());
+        }
+        else
+        {
+            transform.SetParent(lastParent, true);
+            transform.SetSiblingIndex(siblingIdx);
+        }
     }
 }

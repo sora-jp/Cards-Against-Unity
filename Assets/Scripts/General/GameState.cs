@@ -5,13 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+[Serializable]
 public class GameState : IMessageData
 {
     public CardDefinition currentBlackCard = new CardDefinition();
     public int currentCardCzar;
     public List<int> playerScores = new List<int>();
     public List<string> playerNames = new List<string>();
-
 
     public void FromBytes(BinaryReader reader)
     {
