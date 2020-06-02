@@ -2,17 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
 public enum MessageType
 {
-    CmdDrawCard, 
-    RpcPlayCard, 
+    RpcHeartbeatAck,
+    RpcPlayCard,
+    RpcVoteOnClient,
+    RpcRevealCard,
+    CmdRevealCard,
+    CmdSetClientScore,
+    CmdDrawCard,
     CmdSyncGameState,
     CmdHeartbeat,
-    RpcHeartbeatAck,
     CmdOnClientDisconnect,
     CmdBeginVoting,
-    RpcVoteOnClient,
     CmdOnClientPlayedCard,
-    CmdSetGuid
+    CmdSetGuid,
+    CmdRemoveCard,
+    CmdBeginNewRound
 }

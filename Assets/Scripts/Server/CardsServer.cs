@@ -16,7 +16,7 @@ public class CardsServer : MonoBehaviour
     NetworkPipeline m_pipeline;
     NativeList<NetworkConnection> m_connections;
 
-    public static event Action<byte, byte[], int> OnDataReceived; // conn, id, data
+    public static event Action<byte, byte[], int> OnDataReceived; // id, data, conn
     public static event Action<int> OnConnected;
     public static event Action<int> OnDisconnected;
 

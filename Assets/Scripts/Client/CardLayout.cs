@@ -19,9 +19,10 @@ public class CardLayout : MonoBehaviour
         rtransform = GetComponent<RectTransform>();
     }
 
-    void Update()
+    void LateUpdate()
     {
-        for (int i = 0; i < transform.childCount; i++)
+        RecalculateTargets();
+        for (var i = 0; i < transform.childCount; i++)
         {
             var c = transform.GetChild(i);
             var target = GetTarget(c);
@@ -31,12 +32,18 @@ public class CardLayout : MonoBehaviour
         }
     }
 
-    void OnTransformChildrenChanged()
+    void RecalculateTargets()
     {
         var totalH = rtransform.rect.height + verticalOffset;
         var totalW = rtransform.rect.width - horizPadding * 2;
-        var wSlice = totalW / (transform.childCount - 1);
+        var wSlice = totalW / (transform.childCount-1);
         var wStart = -totalW / 2;
+
+        if (transform.childCount <= 1)
+        {
+            wSlice = 0;
+            wStart = 0;
+        }
 
         for (int i = 0; i < transform.childCount; i++)
         {

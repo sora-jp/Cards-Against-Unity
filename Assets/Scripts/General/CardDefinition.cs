@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Net;
+using JetBrains.Annotations;
 using Newtonsoft.Json;
 using UnityEngine;
 // ReSharper disable ConvertToAutoPropertyWithPrivateSetter
@@ -50,5 +51,25 @@ public struct CardDefinition : IMessageData
     {
         writer.Write(m_pick);
         writer.Write(m_cardText);
+    }
+
+    public static bool operator ==(CardDefinition l, CardDefinition r) => l.CardText == r.CardText && l.Pick == r.Pick;
+    public static bool operator !=(CardDefinition l, CardDefinition r) => !(l == r);
+    public override bool Equals(object obj)
+    {
+        return obj is CardDefinition def && this == def;
+    }
+
+    public bool Equals(CardDefinition other)
+    {
+        return m_cardText == other.m_cardText && m_pick == other.m_pick;
+    }
+
+    public override int GetHashCode()
+    {
+        unchecked
+        {
+            return ((m_cardText != null ? m_cardText.GetHashCode() : 0) * 397) ^ m_pick;
+        }
     }
 }

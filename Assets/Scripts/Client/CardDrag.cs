@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+[RequireComponent(typeof(Card))]
 public class CardDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     public static event Action<Card, Transform> OnCardPlayed;
@@ -38,14 +39,11 @@ public class CardDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        transform.SetParent(lastParent, true);
+        transform.SetSiblingIndex(siblingIdx);
         if (RectTransformUtility.RectangleContainsScreenPoint(cardPlayArea, transform.position))
         {
             OnCardPlayed?.Invoke(GetComponent<Card>(), GetComponent<RectTransform>());
-        }
-        else
-        {
-            transform.SetParent(lastParent, true);
-            transform.SetSiblingIndex(siblingIdx);
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using Fasterflect;
 using UnityEngine;
+// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 
 public class ClientImplementation : EventImplementor
 {
@@ -13,10 +14,14 @@ public class ClientImplementation : EventImplementor
     public static event Action<GameState, GameState> OnGameStateChanged;
     public static event Action<int> OnOtherClientDisconnect;
     public static event Action<int> OnClientPlayedCard;
+    public static event Action<CardDefinition> OnShouldRemoveCard;
+    public static event Action OnVotingBegin;
 
-    public int MyGuid { get; private set; }
+    [SerializeField]
+    int m_guid;
+    public int MyGuid => m_guid;
 
-    GameState _lastState;
+    GameState m_lastState;
 
     void Awake()
     {
@@ -30,34 +35,46 @@ public class ClientImplementation : EventImplementor
         CardDrag.OnCardPlayed += OnCardPlayed;
     }
 
-    void OnCardPlayed(Card c, Transform cTrans)
+    static void OnCardPlayed(Card c, Transform cTrans)
     {
         CardsClient.Instance.Send(MessageType.RpcPlayCard, c.CardDef);
     }
 
-    [Message(MessageType.CmdSetGuid)]
-    void SetId(ClientData id)
+    [Message(MessageType.CmdRemoveCard)]
+    void RemoveCard(CardDefinition card)
     {
-        MyGuid = id.Guid;
+        OnShouldRemoveCard?.Invoke(card);
+    }
+
+    [Message(MessageType.CmdSetGuid)]
+    void SetId(ClientIdentifier id)
+    {
+        m_guid = id.Guid;
     }
 
     [Message(MessageType.CmdOnClientDisconnect)]
-    void ClientDisconnected(ClientData data)
+    void ClientDisconnected(ClientIdentifier identifier)
     {
-        OnOtherClientDisconnect?.Invoke(data.Guid);
+        OnOtherClientDisconnect?.Invoke(identifier.Guid);
     }
 
     [Message(MessageType.CmdOnClientPlayedCard)]
-    void ClientPlayedCard(ClientData data)
+    void ClientPlayedCard(ClientIdentifier identifier)
     {
-        OnClientPlayedCard?.Invoke(data.Guid);
+        OnClientPlayedCard?.Invoke(identifier.Guid);
     }
 
     [Message(MessageType.CmdSyncGameState)]
     void SyncGameState(GameState state)
     {
-        OnGameStateChanged?.Invoke(_lastState, state);
-        _lastState = state;
+        OnGameStateChanged?.Invoke(m_lastState, state);
+        m_lastState = state;
+    }
+
+    [Message(MessageType.CmdBeginVoting)]
+    void BeginVoting()
+    {
+        OnVotingBegin?.Invoke();
     }
 
     [Message(MessageType.CmdDrawCard)]

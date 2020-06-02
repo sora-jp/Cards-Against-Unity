@@ -7,22 +7,32 @@ using System.Threading.Tasks;
 
 public class ClientData : IMessageData
 {
-    public int Guid { get; set; }
+    public int guid, score, currentCardAmt;
+    public string name;
 
     public ClientData() { }
 
-    public ClientData(int idx)
+    public ClientData(Client client)
     {
-        Guid = idx;
+        guid = client.guid;
+        score = client.score;
+        name = client.name;
+        currentCardAmt = client.currentCards.Count;
     }
 
     public void FromBytes(BinaryReader reader)
     {
-        Guid = reader.ReadInt32();
+        guid = reader.ReadInt32();
+        name = reader.ReadString();
+        score = reader.ReadInt32();
+        currentCardAmt = reader.ReadInt32();
     }
 
     public void Write(BinaryWriter writer)
     {
-        writer.Write(Guid);
+        writer.Write(guid);
+        writer.Write(name);
+        writer.Write(score);
+        writer.Write(currentCardAmt);
     }
 }

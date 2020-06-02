@@ -1,43 +1,40 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PlayedCardContainer : MonoBehaviour
 {
     public GameObject subHolderPrefab;
-    public GameObject cardPrefab;
+    public Card cardPrefab;
 
-    Dictionary<int, Transform> clientToContainer;
+    public Dictionary<int, List<Card>> clientToCardInstance = new Dictionary<int, List<Card>>();
+
+    Dictionary<int, Transform> m_clientToContainer;
 
     void Awake()
     {
-        clientToContainer = new Dictionary<int, Transform>();
-        ClientImplementation.OnClientPlayedCard += OnRemoteCardPlayed;
-        CardDrag.OnCardPlayed += OnCardPlayed;
+        m_clientToContainer = new Dictionary<int, Transform>();
+        ClientImplementation.OnClientPlayedCard += OnCardPlayed;
     }
 
-    void OnCardPlayed(Card c, Transform cTransform)
-    {
-        var container = GetContainer(ClientImplementation.Instance.MyGuid);
-        cTransform.SetParent(container);
-        cTransform.localRotation = Quaternion.AngleAxis(180, Vector3.up);
-    }
-
-    void OnRemoteCardPlayed(int cliGuid)
+    void OnCardPlayed(int cliGuid)
     {
         var container = GetContainer(cliGuid);
         var card = Instantiate(cardPrefab, container);
         card.transform.localRotation = Quaternion.AngleAxis(180, Vector3.up);
+        if (!clientToCardInstance.ContainsKey(cliGuid)) clientToCardInstance.Add(cliGuid, new List<Card> {card});
+        else clientToCardInstance[cliGuid].Add(card);
     }
 
     Transform GetContainer(int playerGuid)
     {
         Transform obj;
-        if (clientToContainer.ContainsKey(playerGuid)) obj = clientToContainer[playerGuid];
+        if (m_clientToContainer.ContainsKey(playerGuid)) obj = m_clientToContainer[playerGuid];
         else
         {
             obj = Instantiate(subHolderPrefab, transform).transform;
-            clientToContainer.Add(playerGuid, obj);
+            m_clientToContainer.Add(playerGuid, obj);
         }
 
         return obj;
