@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Fasterflect;
 using UnityEngine;
 // ReSharper disable ConvertToAutoPropertyWithPrivateSetter
@@ -12,16 +13,19 @@ public class ClientImplementation : EventImplementor
 
     public static event Action<CardDefinition> OnDrawCard;
     public static event Action<GameState, GameState> OnGameStateChanged;
-    public static event Action<int> OnOtherClientDisconnect;
+    public static event Action<ClientData> OnOtherClientDisconnected;
+    public static event Action<ClientData> OnOtherClientConnected;
     public static event Action<int> OnClientPlayedCard;
     public static event Action<CardDefinition> OnShouldRemoveCard;
+    public static event Action<RevealCardData> OnRevealCard;
     public static event Action OnVotingBegin;
+    public static event Action OnNewRoundBegin;
 
     [SerializeField]
     int m_guid;
     public int MyGuid => m_guid;
 
-    GameState m_lastState;
+    public GameState State { get; private set; }
 
     void Awake()
     {
@@ -33,11 +37,29 @@ public class ClientImplementation : EventImplementor
         Instance = this;
         AttachEvent<CardsClient>(nameof(CardsClient.OnDataReceived));
         CardDrag.OnCardPlayed += OnCardPlayed;
+        PlayedCard.OnCardRevealRequested += OnRevealRequested;
+        ClientVoteButton.OnVoteForClient += OnShouldVoteForClient;
+    }
+
+    static void OnShouldVoteForClient(int playerGuid)
+    {
+        CardsClient.Instance.Send(MessageType.RpcVoteOnClient, new ClientIdentifier(playerGuid));
+    }
+
+    static void OnRevealRequested(int playerGuid, int cardIdx)
+    {
+        CardsClient.Instance.Send(MessageType.RpcRevealCard, new RevealCardData {cardIndex = cardIdx, clientGuid = playerGuid});
     }
 
     static void OnCardPlayed(Card c, Transform cTrans)
     {
         CardsClient.Instance.Send(MessageType.RpcPlayCard, c.CardDef);
+    }
+
+    [Message(MessageType.CmdRevealCard)]
+    void RevealCard(RevealCardData data)
+    {
+        OnRevealCard?.Invoke(data);
     }
 
     [Message(MessageType.CmdRemoveCard)]
@@ -53,9 +75,15 @@ public class ClientImplementation : EventImplementor
     }
 
     [Message(MessageType.CmdOnClientDisconnect)]
-    void ClientDisconnected(ClientIdentifier identifier)
+    void ClientDisconnected(ClientData data)
     {
-        OnOtherClientDisconnect?.Invoke(identifier.Guid);
+        OnOtherClientDisconnected?.Invoke(data);
+    }
+
+    [Message(MessageType.CmdOnClientConnected)]
+    void ClientConnected(ClientData data)
+    {
+        OnOtherClientConnected?.Invoke(data);
     }
 
     [Message(MessageType.CmdOnClientPlayedCard)]
@@ -67,14 +95,20 @@ public class ClientImplementation : EventImplementor
     [Message(MessageType.CmdSyncGameState)]
     void SyncGameState(GameState state)
     {
-        OnGameStateChanged?.Invoke(m_lastState, state);
-        m_lastState = state;
+        OnGameStateChanged?.Invoke(State, state);
+        State = state;
     }
 
     [Message(MessageType.CmdBeginVoting)]
     void BeginVoting()
     {
         OnVotingBegin?.Invoke();
+    }
+
+    [Message(MessageType.CmdBeginNewRound)]
+    void BeginNewRound()
+    {
+        OnNewRoundBegin?.Invoke();
     }
 
     [Message(MessageType.CmdDrawCard)]
@@ -87,5 +121,10 @@ public class ClientImplementation : EventImplementor
     void Heartbeat()
     {
         CardsClient.Instance.Send(MessageType.RpcHeartbeatAck, new EmptyData(), false);
+    }
+
+    public ClientData ClientFromGuid(int cliGuid)
+    {
+        return State?.clients.Single(c => c.guid == cliGuid);
     }
 }

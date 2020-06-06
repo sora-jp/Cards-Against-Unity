@@ -31,6 +31,7 @@ public class ServerImplementation : EventImplementor
 
         m_cards = JsonConvert.DeserializeObject<CardCollection>(Resources.Load<TextAsset>("cards").text);
         m_state.currentBlackCard = GetRandomCard(false);
+        m_state.phase = GamePhase.Playing;
         m_state.SetClientSource(m_clients);
 
         AttachEvent<CardsServer>(nameof(CardsServer.OnDataReceived));
@@ -51,40 +52,94 @@ public class ServerImplementation : EventImplementor
 
     void OnClientDisconnect(int idx)
     {
-        CardsServer.Instance.SendAllExcept(idx, MessageType.CmdOnClientDisconnect, new ClientIdentifier(m_clients[idx].guid));
+        CardsServer.Instance.SendAllExcept(idx, MessageType.CmdOnClientDisconnect, new ClientData(m_clients[idx]));
+        if (m_state.currentCzar == m_clients.Count - 1) m_state.currentCzar = idx; // Swap back changes last index to the index of the player being removed.
         m_clients.RemoveAtSwapBack(idx);
+        UpdateClientIds();
+        m_state.SetClientSource(m_clients);
+
+        foreach (var client in m_clients)
+        {
+            client.SyncGameState(m_state);
+        }
+
+        AdvanceToVotingIfDone();
     }
 
     void OnClientConnected(int idx)
     {
         var cli = new Client(idx);
         m_clients.Insert(idx, cli);
+        UpdateClientIds();
+        m_state.SetClientSource(m_clients);
         cli.SendId();
-        cli.SyncGameState(m_state);
         cli.FillHand(10);
+
+        foreach (var client in m_clients)
+        {
+            client.SyncGameState(m_state);
+        }
+    }
+
+    void UpdateClientIds()
+    {
+        for (int i = 0; i < m_clients.Count; i++)
+        {
+            m_clients[i].id = i;
+        }
     }
 
     [Message(MessageType.RpcVoteOnClient)]
     void OnClientVoted(ClientIdentifier client, int clientIdx)
     {
-        if (m_state.currentCardCzar != clientIdx || m_state.phase != GamePhase.Voting) return;
+        if (m_state.currentCzar != clientIdx || m_state.phase != GamePhase.Voting) return;
 
         m_clients.Find(c => c.guid == client.Guid).score++;
 
-        m_state.currentCardCzar++;
-        while (m_state.currentCardCzar >= m_clients.Count) m_state.currentCardCzar -= m_clients.Count;
+        m_state.currentCzar++;
+        while (m_state.currentCzar >= m_clients.Count) m_state.currentCzar -= m_clients.Count;
 
-        foreach (var cli in m_clients) cli.FillHand(10);
+        foreach (var cli in m_clients)
+        {
+            cli.currentCards.Clear();
+            cli.FillHand(10);
+        }
 
-        CardsServer.Instance.SendAll(MessageType.CmdBeginNewRound, new EmptyData());
+        m_state.currentBlackCard = GetRandomCard(false);
+        m_state.phase = GamePhase.Playing;
+        m_state.SetClientSource(m_clients);
         foreach (var cli in m_clients) cli.SyncGameState(m_state);
+        CardsServer.Instance.SendAll(MessageType.CmdBeginNewRound, new EmptyData());
     }
 
     [Message(MessageType.RpcPlayCard)]
     void ClientPlayedCard(CardDefinition card, int clientIdx)
     {
         var client = m_clients[clientIdx];
-        if (!client.hand.Remove(card) || client.currentCards.Count >= m_state.currentBlackCard.Pick || m_state.phase != GamePhase.Playing) return;
+#if !UNITY_EDITOR
+        if (clientIdx == m_state.currentCzar)
+        {
+            Debug.LogError("SRV: Cannot play card, EISCZAR");
+            return;
+        }
+#endif
+        if (!client.hand.Remove(card))
+        {
+            Debug.LogError("SRV: Cannot play card, ENOTINHAND");
+            return;
+        }
+
+        if (client.currentCards.Count >= m_state.currentBlackCard.Pick)
+        {
+            Debug.LogError("SRV: Cannot play card, ELIMITREACHED");
+            return;
+        }
+
+        if (m_state.phase != GamePhase.Playing)
+        {
+            Debug.LogError("SRV: Cannot play card, EWRONGPHASE");
+            return;
+        }
 
         client.currentCards.Add(card);
         OnCardPlayed?.Invoke(client, card);
@@ -92,10 +147,33 @@ public class ServerImplementation : EventImplementor
         CardsServer.Instance.SendAll(MessageType.CmdOnClientPlayedCard, new ClientIdentifier(client.guid));
         CardsServer.Instance.Send(clientIdx, MessageType.CmdRemoveCard, card);
 
-        var everyoneDone = m_clients.All(cli => cli.currentCards.Count >= m_state.currentBlackCard.Pick);
+        AdvanceToVotingIfDone();
+    }
+
+    [Message(MessageType.RpcRevealCard)]
+    void RevealCard(RevealCardData data, int clientIdx)
+    {
+        if (m_state.currentCzar != clientIdx || data.cardIndex >= m_state.currentBlackCard.Pick || m_state.phase != GamePhase.Voting) return;
+
+        CardsServer.Instance.SendAll(MessageType.CmdRevealCard,
+            new RevealCardData
+            {
+                cardIndex = data.cardIndex, 
+                clientGuid = data.clientGuid, 
+                hasCardDefinition = true,
+                cardData = m_clients.Find(c => c.guid == data.clientGuid).currentCards[data.cardIndex]
+            });
+    }
+
+    void AdvanceToVotingIfDone()
+    {
+        var everyoneDone = m_clients.All(cli => cli.currentCards.Count >= m_state.currentBlackCard.Pick || cli.guid == m_state.CurrentCzarGuid);
 
         if (everyoneDone)
         {
+            m_state.phase = GamePhase.Voting;
+            m_state.SetClientSource(m_clients);
+            foreach (var client in m_clients) client.SyncGameState(m_state);
             CardsServer.Instance.SendAll(MessageType.CmdBeginVoting, new EmptyData());
         }
     }

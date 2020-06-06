@@ -11,9 +11,9 @@ public class ClientIdentifier : IMessageData
 
     public ClientIdentifier() { }
 
-    public ClientIdentifier(int idx)
+    public ClientIdentifier(int guid)
     {
-        Guid = idx;
+        Guid = guid;
     }
 
     public void FromBytes(BinaryReader reader)

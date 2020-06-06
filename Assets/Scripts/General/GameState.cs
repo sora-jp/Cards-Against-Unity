@@ -11,20 +11,23 @@ public class GameState : IMessageData
 {
     public GamePhase phase;
     public CardDefinition currentBlackCard = new CardDefinition();
-    public int currentCardCzar;
+    public int currentCzar;
+
+    public int CurrentCzarGuid => m_clients?[currentCzar].guid ?? clients[currentCzar].guid;
     public List<ClientData> clients = new List<ClientData>();
     List<Client> m_clients;
 
-    public void SetClientSource(List<Client> clients)
+    public void SetClientSource(List<Client> c)
     {
-        m_clients = clients;
+        m_clients = c;
     }
 
     public void FromBytes(BinaryReader reader)
     {
         if (clients == null) clients = new List<ClientData>();
 
-        currentCardCzar = reader.ReadInt32();
+        phase = (GamePhase)reader.ReadInt32();
+        currentCzar = reader.ReadInt32();
         currentBlackCard.FromBytes(reader);
         var len = reader.ReadInt32();
         for (var i = 0; i < len; i++)
@@ -37,9 +40,10 @@ public class GameState : IMessageData
 
     public void Write(BinaryWriter writer)
     {
-        writer.Write(currentCardCzar);
+        writer.Write((int)phase);
+        writer.Write(currentCzar);
         currentBlackCard.Write(writer);
-        writer.Write(clients.Count);
+        writer.Write(m_clients.Count);
         foreach (var cli in m_clients) new ClientData(cli).Write(writer);
     }
 }

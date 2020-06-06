@@ -397,6 +397,7 @@ GameObject:
   - component: {fileID: 7589820379614617667}
   - component: {fileID: 4577817349203928345}
   - component: {fileID: 2004677755360500562}
+  - component: {fileID: 8570125080783610395}
   m_Layer: 5
   m_Name: White Card
   m_TagString: Untagged
@@ -485,7 +486,7 @@ MonoBehaviour:
   m_BlockingObjects: 0
   m_BlockingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 55
 --- !u!114 &7589820379614617664
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -538,6 +539,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b39c2dae23ef4140b1acc7b88c2a1d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!225 &8570125080783610395
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7589820379614617678}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &7915005866334595429
 GameObject:
   m_ObjectHideFlags: 0

@@ -4,15 +4,15 @@ using System.IO;
 using System.Text;
 using Unity.Collections;
 using Unity.Networking.Transport;
+using Unity.Networking.Transport.Utilities;
 using UnityEngine;
 using UnityEngine.Assertions;
-using DefaultNetworkDriver = Unity.Networking.Transport.GenericNetworkDriver<Unity.Networking.Transport.IPv4UDPSocket, Unity.Networking.Transport.DefaultPipelineStageCollection>;
 
 public class CardsServer : MonoBehaviour
 {
     public static CardsServer Instance { get; private set; }
 
-    DefaultNetworkDriver m_driver;
+    NetworkDriver m_driver;
     NetworkPipeline m_pipeline;
     NativeList<NetworkConnection> m_connections;
 
@@ -29,9 +29,8 @@ public class CardsServer : MonoBehaviour
         }
         Instance = this;
 
-        m_driver = new DefaultNetworkDriver(new INetworkParameter[0]);
-
-        m_pipeline = m_driver.CreatePipeline(typeof(NullPipelineStage));
+        m_driver = new NetworkDriver(new UDPNetworkInterface(), new ReliableUtility.Parameters {WindowSize = 32});
+        m_pipeline = m_driver.CreatePipeline(typeof(ReliableSequencedPipelineStage));
 
         var ip = NetworkEndPoint.AnyIpv4;
         ip.Port = 9000;
@@ -87,22 +86,20 @@ public class CardsServer : MonoBehaviour
             switch (m_driver.PopEventForConnection(m_connections[conn], out var stream))
             {
                 case NetworkEvent.Type.Data:
-                    var readerCtx = default(DataStreamReader.Context);
-                    var data = new byte[stream.Length - 1];
+                    using (var data = new NativeArray<byte>(stream.Length - 1, Allocator.Temp))
+                    {
+                        var id = stream.ReadByte();
+                        stream.ReadBytes(data);
 
-                    var id = stream.ReadByte(ref readerCtx);
-                    stream.ReadBytesIntoArray(ref readerCtx, ref data, data.Length);
-
-                    OnDataReceived?.Invoke(id, data, conn);
+                        OnDataReceived?.Invoke(id, data.ToArray(), conn);
+                    }
                     break;
-
                 case NetworkEvent.Type.Disconnect:
                     OnDisconnected?.Invoke(conn);
 
                     Debug.Log($"SRV: Client {conn} disconnected");
                     m_connections[conn] = default;
                     break;
-
                 case NetworkEvent.Type.Empty:
                     return;
                 case NetworkEvent.Type.Connect:
@@ -130,11 +127,9 @@ public class CardsServer : MonoBehaviour
             {
                 fixed (byte* buf = &stream.ToArray()[0])
                 {
-                    using (var writer = new DataStreamWriter((int) stream.Length, Allocator.Temp))
-                    {
-                        writer.WriteBytes(buf, (int) stream.Length);
-                        m_connections[connId].Send(m_driver, writer);
-                    }
+                    var writer = m_driver.BeginSend(m_connections[connId]);
+                    writer.WriteBytes(buf, (int) stream.Length);
+                    m_driver.EndSend(writer);
                 }
             }
         }

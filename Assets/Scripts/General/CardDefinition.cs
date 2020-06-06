@@ -53,7 +53,7 @@ public struct CardDefinition : IMessageData
         writer.Write(m_cardText);
     }
 
-    public static bool operator ==(CardDefinition l, CardDefinition r) => l.CardText == r.CardText && l.Pick == r.Pick;
+    public static bool operator ==(CardDefinition l, CardDefinition r) => l.CardText.Equals(r.CardText, StringComparison.OrdinalIgnoreCase) && l.Pick == r.Pick;
     public static bool operator !=(CardDefinition l, CardDefinition r) => !(l == r);
     public override bool Equals(object obj)
     {

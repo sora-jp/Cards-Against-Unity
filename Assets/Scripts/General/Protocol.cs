@@ -4,7 +4,6 @@ using UnityEngine;
 
 public enum MessageType
 {
-    RpcHeartbeatAck,
     RpcPlayCard,
     RpcVoteOnClient,
     RpcRevealCard,
@@ -12,11 +11,13 @@ public enum MessageType
     CmdSetClientScore,
     CmdDrawCard,
     CmdSyncGameState,
-    CmdHeartbeat,
     CmdOnClientDisconnect,
     CmdBeginVoting,
     CmdOnClientPlayedCard,
     CmdSetGuid,
     CmdRemoveCard,
-    CmdBeginNewRound
+    CmdBeginNewRound,
+    CmdOnClientConnected,
+    CmdHeartbeat,
+    RpcHeartbeatAck
 }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+[Serializable]
 public class ClientData : IMessageData
 {
     public int guid, score, currentCardAmt;

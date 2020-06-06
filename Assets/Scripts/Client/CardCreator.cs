@@ -12,6 +12,11 @@ public class CardCreator : MonoBehaviour
         ClientImplementation.OnDrawCard += CreateCard;
     }
 
+    void OnDestroy()
+    {
+        ClientImplementation.OnDrawCard -= CreateCard;
+    }
+
     void CreateCard(CardDefinition card)
     {
         var obj = Instantiate(prefab, overrideParent ?? transform);
