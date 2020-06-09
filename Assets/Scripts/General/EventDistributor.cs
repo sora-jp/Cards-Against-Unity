@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Fasterflect;
-using UnityEngine;
 using Type = System.Type;
+using UnityEngine;
+using UnityEngine.Scripting;
 
+[Preserve]
 public class EventDistributor
 {
     Type m_evtProvider;
@@ -21,16 +21,16 @@ public class EventDistributor
     public EventDistributor(object impl)
     {
         m_implementation = impl;
-        var methods = m_implementation.GetType().MethodsWith(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, typeof(MessageAttribute));
+        var methods = m_implementation.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Where(m => m.GetCustomAttribute<MessageAttribute>() != null).ToArray();
 
-        m_idToMethod = methods.ToDictionary(m => Convert.ToInt32(m.Attribute<MessageAttribute>().MessageId));
+        m_idToMethod = methods.ToDictionary(m => Convert.ToInt32(m.GetCustomAttribute<MessageAttribute>().MessageId));
         m_methodNeedsData = methods.ToDictionary(m => m, NeedsData);
     }
 
     static bool NeedsData(MethodInfo method)
     {
-        var param = method.Parameters();
-        return param.Count > 0 && param[0].ParameterType.GetInterfaces().Contains(typeof(IMessageData));
+        var param = method.GetParameters();
+        return param.Length > 0 && param.First().ParameterType.GetInterfaces().Contains(typeof(IMessageData));
     }
 
     public void AttachEvent<T>(string evtName)
@@ -38,20 +38,27 @@ public class EventDistributor
         m_evtProvider = typeof(T);
         m_evtName = evtName;
         
-        m_evtProvider.AddHandler(m_evtName, HandleMessage);
+        var evt = m_evtProvider.GetEvent(m_evtName);
+        evt.AddEventHandler(null, 
+            Delegate.CreateDelegate(
+                typeof(Action<object[]>), 
+                this, 
+                GetType().GetMethod(nameof(HandleMessage), BindingFlags.Instance | BindingFlags.NonPublic))
+            );
     }
 
     // TODO: Cache everythang
-    object HandleMessage(object[] arg)
+    [Preserve]
+    void HandleMessage(object[] arg)
     {
         var id = Convert.ToInt32(arg[0]);
-        if (!m_idToMethod.ContainsKey(id)) return null;
+        if (!m_idToMethod.ContainsKey(id)) return;
 
         var method = m_idToMethod[Convert.ToInt32(arg[0])];
 
         var data = (IMessageData) null;
 
-        if (m_methodNeedsData[method]) data = (IMessageData)method.Parameters()[0].ParameterType.CreateInstance();
+        if (m_methodNeedsData[method]) data = (IMessageData)Activator.CreateInstance(method.GetParameters()[0].ParameterType);
 
         if (data != null) using (var stream = new MemoryStream((byte[])arg[1])) using (var reader = new BinaryReader(stream)) data.FromBytes(reader);
 
@@ -59,9 +66,7 @@ public class EventDistributor
         if (data != null) parameters.Add(data);
         parameters.AddRange(arg.Skip(2));
 
-        method.Call(m_implementation, parameters.ToArray());
-
-        return null;
+        method.Invoke(m_implementation, parameters.ToArray());
     }
 }
 
@@ -81,7 +86,7 @@ public class EventImplementor : MonoBehaviour
 }
 
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-sealed class MessageAttribute : Attribute
+public sealed class MessageAttribute : PreserveAttribute
 {
     public object MessageId { get; }
 
@@ -91,8 +96,9 @@ sealed class MessageAttribute : Attribute
     }
 }
 
+[Preserve]
 public interface IMessageData
 {
-    void FromBytes(BinaryReader reader);
-    void Write(BinaryWriter writer);
+    [Preserve] void FromBytes(BinaryReader reader);
+    [Preserve] void Write(BinaryWriter writer);
 }

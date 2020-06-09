@@ -1,25 +1,24 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Net;
-using JetBrains.Annotations;
 using Newtonsoft.Json;
-using UnityEngine;
+using UnityEngine.Scripting;
+
 // ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 
 [Serializable]
 public struct CardDefinition : IMessageData
 {
-    [SerializeField] string m_cardText;
+    string m_cardText;
     public string CardText => m_cardText;
-    [SerializeField] int m_pick;
+    int m_pick;
     public int Pick => m_pick;
 
+    [Preserve]
     public static implicit operator CardDefinition(string s) => new CardDefinition(s);
 
-    [JsonConstructor]
+    [JsonConstructor, Preserve]
     public CardDefinition(string text, int pick = 1)
     {
         m_cardText = Escape(text);

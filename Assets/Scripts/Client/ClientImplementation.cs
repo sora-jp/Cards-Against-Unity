@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using Fasterflect;
 using UnityEngine;
+using UnityEngine.Scripting;
+
 // ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 
 public class ClientImplementation : EventImplementor

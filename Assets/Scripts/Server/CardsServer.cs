@@ -1,22 +1,21 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using Unity.Collections;
 using Unity.Networking.Transport;
 using Unity.Networking.Transport.Utilities;
 using UnityEngine;
-using UnityEngine.Assertions;
 
 public class CardsServer : MonoBehaviour
 {
+    public const int PORT = 9500;
+
     public static CardsServer Instance { get; private set; }
 
     NetworkDriver m_driver;
-    NetworkPipeline m_pipeline;
     NativeList<NetworkConnection> m_connections;
 
-    public static event Action<byte, byte[], int> OnDataReceived; // id, data, conn
+    public static event Action<object[]> OnDataReceived; // id, data, conn
     public static event Action<int> OnConnected;
     public static event Action<int> OnDisconnected;
 
@@ -29,16 +28,32 @@ public class CardsServer : MonoBehaviour
         }
         Instance = this;
 
-        m_driver = new NetworkDriver(new UDPNetworkInterface(), new ReliableUtility.Parameters {WindowSize = 32});
-        m_pipeline = m_driver.CreatePipeline(typeof(ReliableSequencedPipelineStage));
+        m_driver = NetworkDriver.Create(
+            new ReliableUtility.Parameters
+            {
+                WindowSize = 32
+            }
+#if SIMULATE_BAD_CONNECTION
+            ,new SimulatorUtility.Parameters
+            {
+                PacketDelayMs = 25,
+                PacketDropPercentage = 15
+            }
+#endif
+            );
+        m_driver.CreatePipeline(typeof(ReliableSequencedPipelineStage));
+
+#if SIMULATE_BAD_CONNECTION
+        m_driver.CreatePipeline(typeof(SimulatorPipelineStage));
+#endif
 
         var ip = NetworkEndPoint.AnyIpv4;
-        ip.Port = 9000;
+        ip.Port = PORT;
 
-        if (m_driver.Bind(ip) != 0) Debug.LogError("SRV: Failed to bind to port 9000");
+        if (m_driver.Bind(ip) != 0) Debug.LogError($"SRV: Failed to bind to port {PORT}");
         else m_driver.Listen();
 
-        Debug.Log("SRV: Server started on port 9000");
+        Debug.Log($"SRV: Server started on port {PORT}");
 
         m_connections = new NativeList<NetworkConnection>(16, Allocator.Persistent);
     }
@@ -91,20 +106,19 @@ public class CardsServer : MonoBehaviour
                         var id = stream.ReadByte();
                         stream.ReadBytes(data);
 
-                        OnDataReceived?.Invoke(id, data.ToArray(), conn);
+                        if (id != (byte)MessageType.RpcHeartbeatAck)Debug.Log($"SRV: Received {(MessageType)id} from client {conn}");
+                        OnDataReceived?.Invoke(new object[] {id, data.ToArray(), conn});
                     }
                     break;
                 case NetworkEvent.Type.Disconnect:
+                    Debug.Log($"SRV: Client {conn} disconnected");
                     OnDisconnected?.Invoke(conn);
 
-                    Debug.Log($"SRV: Client {conn} disconnected");
                     m_connections[conn] = default;
                     break;
                 case NetworkEvent.Type.Empty:
                     return;
                 case NetworkEvent.Type.Connect:
-                    break;
-                default:
                     break;
             }
         }

@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 [ExecuteInEditMode, RequireComponent(typeof(RectTransform))]
 public class SlideFromEdge : MonoBehaviour

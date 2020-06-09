@@ -1,25 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 [Serializable]
 public class ClientData : IMessageData
 {
     public int guid, score, currentCardAmt;
     public string name;
-
-    public ClientData() { }
-
-    public ClientData(Client client)
-    {
-        guid = client.guid;
-        score = client.score;
-        name = client.name;
-        currentCardAmt = client.currentCards.Count;
-    }
 
     public void FromBytes(BinaryReader reader)
     {

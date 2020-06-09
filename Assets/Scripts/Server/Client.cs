@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using Random = UnityEngine.Random;
 
 [Serializable]
@@ -44,5 +43,16 @@ public class Client
     public void SendId()
     {
         CardsServer.Instance.Send(id, MessageType.CmdSetGuid, new ClientIdentifier(guid));
+    }
+
+    public ClientData ToClientData()
+    {
+        return new ClientData
+        {
+            guid = guid,
+            score = score,
+            name = name,
+            currentCardAmt = currentCards.Count
+        };
     }
 }

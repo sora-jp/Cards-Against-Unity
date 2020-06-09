@@ -1,14 +1,15 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Security.Cryptography;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Networking.Transport;
 using Unity.Networking.Transport.Utilities;
 using UnityEngine;
-using ReliableSequencedPipelineStage = Unity.Networking.Transport.ReliableSequencedPipelineStage;
+using UnityEngine.Scripting;
 
 public class CardsClient : MonoBehaviour
 {
@@ -25,7 +26,7 @@ public class CardsClient : MonoBehaviour
         }
     }
 
-    public static event Action<byte, byte[]> OnDataReceived; // id, data
+    public static event Action<object[]> OnDataReceived; // id, data
     public static event Action OnConnected;
     public static event Action OnDisconnected;
     public static event Action<State, State> OnStateChange; // old, new
@@ -44,27 +45,50 @@ public class CardsClient : MonoBehaviour
         }
         Instance = this;
 
-        // Init connections
-        m_driver = new NetworkDriver(new UDPNetworkInterface(), new ReliableUtility.Parameters {WindowSize = 32});
-        
-        // Corresponds to server default pipeline
+        // Init driver
+        m_driver = NetworkDriver.Create(
+            new ReliableUtility.Parameters
+            {
+                WindowSize = 32
+            }
+#if SIMULATE_BAD_CONNECTION
+            ,new SimulatorUtility.Parameters
+            {
+                PacketDelayMs = 25,
+                PacketDropPercentage = 15
+            }
+#endif
+            );
+
+        // Create pipelines corresponding to those on the server
         m_pipeline = m_driver.CreatePipeline(typeof(ReliableSequencedPipelineStage));
+
+#if SIMULATE_BAD_CONNECTION
+        m_driver.CreatePipeline(typeof(SimulatorPipelineStage));
+#endif
+
         State = State.Initialized;
     }
 
     // TODO: Remove this
     void Start()
     {
+#if !UNITY_EDITOR
+        //if (CardsServer.Instance == null) return;
+#endif
         var ep = NetworkEndPoint.LoopbackIpv4;
-        ep.Port = 9000;
-        ConnectTo(ep);
+        ep.Port = CardsServer.PORT;
+        ConnectTo("localhost");
     }
 
     // Connect to a certain endpoint
-    public void ConnectTo(NetworkEndPoint endpoint)
+    public void ConnectTo(string endpoint)
     {
         State = State.Connecting;
-        m_connection = m_driver.Connect(endpoint);
+        Debug.Log($"Resolving DNS record for host {endpoint}");
+        var dnsRecord = Dns.GetHostEntry(endpoint).AddressList.Single(e => e.AddressFamily == AddressFamily.InterNetwork);
+        Debug.Log($"DNS Resolved to addr: {dnsRecord}");
+        m_connection = m_driver.Connect(NetworkEndPoint.Parse(dnsRecord.ToString(), CardsServer.PORT));
     }
 
     void OnDestroy()
@@ -93,8 +117,8 @@ public class CardsClient : MonoBehaviour
                         var id = stream.ReadByte();
                         stream.ReadBytes(data);
 
-                        //Debug.Log($"CLI: Received {(MessageType)id} from server");
-                        OnDataReceived?.Invoke(id, data.ToArray());
+                        if (id != (byte)MessageType.CmdHeartbeat) Debug.Log($"CLI: Received {(MessageType)id} from server");
+                        OnDataReceived?.Invoke(new object[] {id, data.ToArray()});
                     }
 
                     break;
@@ -141,9 +165,22 @@ public class CardsClient : MonoBehaviour
             }
         }
     }
-}
 
-public enum State
-{
-    Initializing, Initialized, Connecting, Connected, Disconnected
+    public NetworkDebugInfo GatherDebugInfo()
+    {
+        unsafe
+        {
+            var pipelineStage = NetworkPipelineStageCollection.GetStageId(typeof(ReliableSequencedPipelineStage));
+            m_driver.GetPipelineBuffers(m_pipeline, pipelineStage, m_connection, out _, out _, out var reliableBuffer);
+            var ctx = (ReliableUtility.SharedContext*)reliableBuffer.GetUnsafePtr();
+
+            return new NetworkDebugInfo
+            {
+                rtt = ctx->RttInfo,
+                sent = ctx->stats.PacketsSent,
+                received = ctx->stats.PacketsReceived,
+                dropped = ctx->stats.PacketsDropped
+            };
+        }
+    }
 }
