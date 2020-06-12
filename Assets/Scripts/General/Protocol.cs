@@ -15,5 +15,6 @@
     CmdBeginNewRound,
     CmdOnClientConnected,
     CmdHeartbeat,
-    RpcHeartbeatAck
+    RpcHeartbeatAck,
+    RpcSetName
 }

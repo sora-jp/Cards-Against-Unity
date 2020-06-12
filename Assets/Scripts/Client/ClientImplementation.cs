@@ -54,6 +54,11 @@ public class ClientImplementation : EventImplementor
         CardsClient.Instance.Send(MessageType.RpcPlayCard, c.CardDef);
     }
 
+    public void SetName(string name)
+    {
+        CardsClient.Instance.Send(MessageType.RpcSetName, new ClientName {Name = name});
+    }
+
     [Message(MessageType.CmdRevealCard)]
     void RevealCard(RevealCardData data)
     {

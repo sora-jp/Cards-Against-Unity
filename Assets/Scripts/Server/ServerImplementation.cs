@@ -93,6 +93,14 @@ public class ServerImplementation : EventImplementor
         }
     }
 
+    [Message(MessageType.RpcSetName)]
+    void OnClientSetName(ClientName name, int clientIdx)
+    {
+        m_clients[clientIdx].name = name.Name;
+        m_state.clients = m_clients.Select(c => c.ToClientData()).ToList();
+        foreach (var cli in m_clients) cli.SyncGameState(m_state);
+    }
+
     [Message(MessageType.RpcVoteOnClient)]
     void OnClientVoted(ClientIdentifier client, int clientIdx)
     {

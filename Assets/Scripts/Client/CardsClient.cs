@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -34,6 +35,7 @@ public class CardsClient : MonoBehaviour
     NetworkDriver m_driver;
     NetworkConnection m_connection;
     NetworkPipeline m_pipeline;
+    readonly Queue<Packet> m_sendQueue = new Queue<Packet>();
 
     void Awake()
     {
@@ -73,9 +75,7 @@ public class CardsClient : MonoBehaviour
     // TODO: Remove this
     void Start()
     {
-#if !UNITY_EDITOR
-        //if (CardsServer.Instance == null) return;
-#endif
+        if (CardsServer.Instance == null) return;
         var ep = NetworkEndPoint.LoopbackIpv4;
         ep.Port = CardsServer.PORT;
         ConnectTo("localhost");
@@ -141,24 +141,35 @@ public class CardsClient : MonoBehaviour
         }
     }
 
+    void LateUpdate()
+    {
+        if (State != State.Connected) return;
+        while (m_sendQueue.Count > 0) Send(m_sendQueue.Dequeue());
+    }
+
     // Send data to the server
     public void Send<T>(T id, IMessageData data, bool log = true) where T:Enum
     {
-        if (log) Debug.Log($"CLI: Sending {id.ToString()} to server");
+        m_sendQueue.Enqueue(new Packet {messageID = id, messageData = data, logPacket = log});
+    }
+
+    void Send(Packet packet)
+    {
+        if (packet.logPacket) Debug.Log($"CLI: Sending {packet.messageID} to server");
 
         using (var stream = new MemoryStream(32))
         {
             using (var binWriter = new BinaryWriter(stream, Encoding.ASCII, true))
             {
-                binWriter.Write(Convert.ToByte(id));
-                data.Write(binWriter);
+                binWriter.Write(Convert.ToByte(packet.messageID));
+                packet.messageData.Write(binWriter);
             }
 
             unsafe
             {
                 fixed (byte* buf = &stream.ToArray()[0])
                 {
-                    var writer = m_driver.BeginSend(m_connection, (int) stream.Length);
+                    var writer = m_driver.BeginSend(m_connection, (int)stream.Length);
                     writer.WriteBytes(buf, (int)stream.Length);
                     m_driver.EndSend(writer);
                 }
