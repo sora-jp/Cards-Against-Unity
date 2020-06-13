@@ -21,7 +21,7 @@ public class CardDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        offset = transform.position - (Vector3)eventData.position;
+        offset = transform.position - rootCanvas.worldCamera.ScreenToWorldPoint(eventData.position);
         
         siblingIdx = transform.GetSiblingIndex();
         lastParent = transform.parent;
@@ -32,7 +32,7 @@ public class CardDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
 
     public void OnDrag(PointerEventData eventData)
     {
-        transform.position = (Vector3)eventData.position + offset;
+        transform.position = rootCanvas.worldCamera.ScreenToWorldPoint(eventData.position) + offset;
     }
 
     public void OnEndDrag(PointerEventData eventData)

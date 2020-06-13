@@ -72,15 +72,6 @@ public class CardsClient : MonoBehaviour
         State = State.Initialized;
     }
 
-    // TODO: Remove this
-    void Start()
-    {
-        if (CardsServer.Instance == null) return;
-        var ep = NetworkEndPoint.LoopbackIpv4;
-        ep.Port = CardsServer.PORT;
-        ConnectTo("localhost");
-    }
-
     // Connect to a certain endpoint
     public void ConnectTo(string endpoint)
     {

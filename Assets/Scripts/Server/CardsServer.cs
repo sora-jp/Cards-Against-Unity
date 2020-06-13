@@ -8,7 +8,7 @@ using UnityEngine;
 
 public class CardsServer : MonoBehaviour
 {
-    public const int PORT = 9500;
+    public const int PORT = 2358;
 
     public static CardsServer Instance { get; private set; }
 

@@ -15,9 +15,7 @@ public class AddressEntryPanel : MonoBehaviour
 
         if (CardsServer.Instance != null)
         {
-            m_group.alpha = 0;
-            m_group.interactable = m_group.blocksRaycasts = false;
-            return;
+            addressField.gameObject.SetActive(false);
         }
 
         m_group.alpha = 1;
@@ -27,7 +25,7 @@ public class AddressEntryPanel : MonoBehaviour
     public void Connect()
     {
         if (CardsClient.Instance.State != State.Initialized) return;
-        CardsClient.Instance.ConnectTo(addressField.text);
+        CardsClient.Instance.ConnectTo(CardsServer.Instance == null ? addressField.text : "localhost");
         ClientImplementation.Instance.SetName(nameField.text);
         m_group.DOFade(0, 0.5f).SetEase(Ease.InOutCubic);
         m_group.interactable = m_group.blocksRaycasts = false;

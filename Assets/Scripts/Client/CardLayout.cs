@@ -11,6 +11,7 @@ public class CardLayout : MonoBehaviour
     Dictionary<Transform, float> _cToTargetHeight = new Dictionary<Transform, float>();
     Dictionary<Transform, Vector3> _cToTarget = new Dictionary<Transform, Vector3>();
     Dictionary<Transform, Vector3> _cToVel = new Dictionary<Transform, Vector3>();
+    Dictionary<Transform, bool> _cWasCreatedLastFrame = new Dictionary<Transform, bool>();
 
     void Awake()
     {
@@ -25,7 +26,8 @@ public class CardLayout : MonoBehaviour
             var c = transform.GetChild(i);
             var target = GetTarget(c);
             var vel = _cToVel.ContainsKey(c) ? _cToVel[c] : Vector3.zero;
-            c.localPosition = Vector3.SmoothDamp(c.localPosition, target, ref vel, smoothTime);
+            c.localPosition = _cWasCreatedLastFrame[c] ? target : Vector3.SmoothDamp(c.localPosition, target, ref vel, smoothTime);
+            _cWasCreatedLastFrame[c] = false;
             _cToVel[c] = vel;
         }
     }
@@ -46,13 +48,17 @@ public class CardLayout : MonoBehaviour
         for (int i = 0; i < transform.childCount; i++)
         {
             var c = transform.GetChild(i);
+            if (!_cToTarget.ContainsKey(c)) _cWasCreatedLastFrame[c] = true;
             _cToTarget[c] = Vector3.right * (wStart + i * wSlice) + Vector3.up * totalH;
         }
     }
 
     Vector3 GetTarget(Transform c)
     {
-        if (!_cToTarget.ContainsKey(c)) _cToTarget[c] = Vector3.zero;
+        if (!_cToTarget.ContainsKey(c))
+        {
+            _cToTarget[c] = Vector3.zero;
+        }
         if (!_cToTargetHeight.ContainsKey(c)) _cToTargetHeight[c] = 0;
         return _cToTarget[c] + Vector3.up * _cToTargetHeight[c];
     }

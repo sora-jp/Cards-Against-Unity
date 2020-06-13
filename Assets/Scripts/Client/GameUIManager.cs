@@ -8,17 +8,19 @@ public class GameUIManager : MonoBehaviour
 
     void Awake()
     {
-        ClientImplementation.OnVotingBegin += BeginVoting;
-        ClientImplementation.OnNewRoundBegin += BeginNewRound;
+        //cardHolderSlide.transition = 0;
+
+        ClientImplementation.OnVotingBegin += Hide;
+        ClientImplementation.OnNewRoundBegin += Show;
     }
 
     void OnDestroy()
     {
-        ClientImplementation.OnVotingBegin -= BeginVoting;
-        ClientImplementation.OnNewRoundBegin -= BeginNewRound;
+        ClientImplementation.OnVotingBegin -= Hide;
+        ClientImplementation.OnNewRoundBegin -= Show;
     }
 
-    void BeginNewRound()
+    void Show()
     {
         StartCoroutine(Animate());
         IEnumerator Animate()
@@ -37,7 +39,7 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    void BeginVoting()
+    void Hide()
     {
         StartCoroutine(Animate());
         IEnumerator Animate()
@@ -56,7 +58,7 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    void Update()
+    void LateUpdate()
     {
         if (ClientImplementation.Instance.State != null && ClientImplementation.Instance.MyGuid == ClientImplementation.Instance.State.CurrentCzarGuid)
             cardHolderSlide.transition = 0;
