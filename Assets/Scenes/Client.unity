@@ -564,7 +564,7 @@ Camera:
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
-  m_AllowMSAA: 1
+  m_AllowMSAA: 0
   m_AllowDynamicResolution: 0
   m_ForceIntoRT: 0
   m_OcclusionCulling: 1
@@ -2699,7 +2699,6 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 1638214551301233749, guid: 27e59f217160d4045b25dc9be6bd10f9, type: 3}
     - {fileID: 4643143628841490703, guid: 27e59f217160d4045b25dc9be6bd10f9, type: 3}
-    - {fileID: 3668670249385320990, guid: 27e59f217160d4045b25dc9be6bd10f9, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 27e59f217160d4045b25dc9be6bd10f9, type: 3}
 --- !u!1 &1774736282
 GameObject:

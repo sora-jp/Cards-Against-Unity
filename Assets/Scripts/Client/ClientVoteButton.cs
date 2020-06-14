@@ -20,6 +20,9 @@ public class ClientVoteButton : MonoBehaviour
     void Start()
     {
         m_group = GetComponent<CanvasGroup>();
+        m_group.alpha = 0;
+        m_group.blocksRaycasts = false;
+
         m_button = GetComponent<Button>();
         m_button.onClick.AddListener(() =>
         {
@@ -28,14 +31,12 @@ public class ClientVoteButton : MonoBehaviour
 
         if (ClientImplementation.Instance.State.phase == GamePhase.Voting)
         {
-            m_group.alpha = ClientImplementation.Instance.MyGuid == ClientImplementation.Instance.State.CurrentCzarGuid ? 1 : 0;
-            m_group.blocksRaycasts = ClientImplementation.Instance.MyGuid == ClientImplementation.Instance.State.CurrentCzarGuid;
+            OnVotingBegin();
             return;
         }
+
         ClientImplementation.OnVotingBegin += OnVotingBegin;
         m_added = true;
-        m_group.alpha = 0;
-        m_group.blocksRaycasts = false;
     }
 
     void OnVotingBegin()

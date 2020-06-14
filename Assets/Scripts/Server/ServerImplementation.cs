@@ -192,6 +192,6 @@ public class ServerImplementation : EventImplementor
 
     public CardDefinition GetRandomCard(bool white)
     {
-        return (white ? m_cards.WhiteCards :  m_cards.BlackCards).RandomItem();
+        return (white ? m_cards.whiteCards :  m_cards.blackCards).RandomItem();
     }
 }

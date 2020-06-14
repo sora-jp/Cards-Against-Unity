@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PlayerStatusUIManager : MonoBehaviour
@@ -25,7 +26,7 @@ public class PlayerStatusUIManager : MonoBehaviour
             Destroy(transform.GetChild(i).gameObject);
         }
 
-        foreach (var client in cur.clients)
+        foreach (var client in cur.clients.OrderByDescending(c => c.score))
         {
             Debug.Log($"Creating player ui for {client.guid}");
             Instantiate(prefab, transform).linkedClient = client;
