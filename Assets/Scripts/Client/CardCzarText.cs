@@ -19,7 +19,7 @@ public class CardCzarText : MonoBehaviour
     void OnGameStateChanged(GameState prev, GameState cur)
     {
         float target = cur.CurrentCzarGuid == ClientImplementation.Instance.MyGuid ? 0 : 1;
-        if (prev?.phase != GamePhase.Voting && cur.phase == GamePhase.Voting) target = 0;
+        if (cur.phase == GamePhase.Voting) target = 0;
         if (prev == null)
         {
             m_slide.transition = target;

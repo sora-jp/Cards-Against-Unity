@@ -6,7 +6,7 @@ public class PlayerStatusUIManager : MonoBehaviour
 {
     public PlayerStatusUI prefab;
 
-    List<PlayerStatusUI> m_players = new List<PlayerStatusUI>();
+    readonly Dictionary<int, PlayerStatusUI> m_players = new Dictionary<int, PlayerStatusUI>();
 
     void Awake()
     {
@@ -21,15 +21,34 @@ public class PlayerStatusUIManager : MonoBehaviour
     void GameStateChanged(GameState last, GameState cur)
     {
         Debug.Log("Syncing player ui");
-        for (var i = 0; i < transform.childCount; i++)
+        var toCreate = last != null ? cur.clients.Except(last.clients) : cur.clients;
+        var toDelete = last != null ? last.clients.Except(cur.clients) : Enumerable.Empty<ClientData>();
+
+        foreach (var cli in toCreate)
         {
-            Destroy(transform.GetChild(i).gameObject);
+            m_players[cli.guid] = CreatePlayerUi(cli);
         }
 
-        foreach (var client in cur.clients.OrderByDescending(c => c.score))
+        foreach (var cli in toDelete)
         {
-            Debug.Log($"Creating player ui for {client.guid}");
-            Instantiate(prefab, transform).linkedClient = client;
+            Destroy(m_players[cli.guid].gameObject);
+            m_players.Remove(cli.guid);
         }
+
+        var clientsByScore = cur.clients.OrderByDescending(c => c.score).ToArray();
+
+        for (var i = 0; i < clientsByScore.Length; i++)
+        {
+            m_players[clientsByScore[i].guid].transform.SetSiblingIndex(i);
+            m_players[clientsByScore[i].guid].linkedClient = clientsByScore[i];
+        }
+    }
+
+    PlayerStatusUI CreatePlayerUi(ClientData cli)
+    {
+        Debug.Log($"Creating player ui for {cli.guid}");
+        var statusUi = Instantiate(prefab, transform);
+        statusUi.linkedClient = cli;
+        return statusUi;
     }
 }

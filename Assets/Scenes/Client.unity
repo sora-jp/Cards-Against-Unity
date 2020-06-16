@@ -1619,6 +1619,7 @@ GameObject:
   - component: {fileID: 1088095427}
   - component: {fileID: 1088095429}
   - component: {fileID: 1088095430}
+  - component: {fileID: 1088095431}
   m_Layer: 5
   m_Name: Czar Text
   m_TagString: Untagged
@@ -1770,6 +1771,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e7c76f70d71dda4795429fb891f5ce3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!225 &1088095431
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1088095425}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &1177313863
 GameObject:
   m_ObjectHideFlags: 0
@@ -2370,8 +2383,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1585017800}
-  - component: {fileID: 1585017801}
   - component: {fileID: 1585017802}
+  - component: {fileID: 1585017801}
   m_Layer: 5
   m_Name: Player List
   m_TagString: Untagged
@@ -2395,9 +2408,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 430, y: -195}
-  m_SizeDelta: {x: 860.0004, y: 390.00024}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -387, y: -245.75}
+  m_SizeDelta: {x: 860.0005, y: 390.00024}
+  m_Pivot: {x: -0.45, y: 0.37}
 --- !u!114 &1585017801
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2407,22 +2420,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1585017799}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Script: {fileID: 11500000, guid: 30165649e98f4db41b28d9ac587340c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Padding:
-    m_Left: 50
-    m_Right: 50
-    m_Top: 50
-    m_Bottom: 50
-  m_ChildAlignment: 0
-  m_Spacing: 10
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 0
-  m_ChildControlWidth: 1
-  m_ChildControlHeight: 0
-  m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
+  spacing: 30
+  smoothTime: 0.25
 --- !u!114 &1585017802
 MonoBehaviour:
   m_ObjectHideFlags: 0

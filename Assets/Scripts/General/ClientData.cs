@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 
 [Serializable]
-public class ClientData : IMessageData
+public partial class ClientData : IMessageData, IEquatable<ClientData>
 {
     public int guid, score, currentCardAmt;
     public string name;

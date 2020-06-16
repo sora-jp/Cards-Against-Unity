@@ -15,7 +15,7 @@ public class Client
     public Client(int id)
     {
         this.id = id;
-        guid = Random.Range(0, int.MaxValue);
+        guid = ServerImplementation.Instance.GenerateGuid();
     }
 
     public void FillHand(int targetAmt)

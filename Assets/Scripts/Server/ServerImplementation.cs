@@ -194,4 +194,15 @@ public class ServerImplementation : EventImplementor
     {
         return (white ? m_cards.whiteCards :  m_cards.blackCards).RandomItem();
     }
+
+    public int GenerateGuid()
+    {
+        int guid;
+        do
+        {
+            guid = Random.Range(int.MinValue, int.MaxValue);
+        } while (m_clients.Any(c => c.guid == guid) && m_clients.Count > 0);
+
+        return guid;
+    }
 }
