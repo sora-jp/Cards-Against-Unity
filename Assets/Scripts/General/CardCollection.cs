@@ -3,6 +3,6 @@ using Newtonsoft.Json;
 
 public class CardCollection
 {
-    /*[JsonProperty(PropertyName = "whiteCards")] */public List<CardDefinition> whiteCards;
-    /*[JsonProperty(PropertyName = "blackCards")] */public List<CardDefinition> blackCards;
+    public List<CardDefinition> whiteCards;
+    public List<CardDefinition> blackCards;
 }
