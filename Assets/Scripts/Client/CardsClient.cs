@@ -108,7 +108,7 @@ public class CardsClient : MonoBehaviour
                         var id = stream.ReadByte();
                         stream.ReadBytes(data);
 
-                        if (id != (byte)MessageType.CmdHeartbeat) Debug.Log($"CLI: Received {(MessageType)id} from server");
+                        if (id != (byte)MessageType.Heartbeat) Debug.Log($"CLI: Received {(MessageType)id} from server");
                         OnDataReceived?.Invoke(new object[] {id, data.ToArray()});
                     }
 

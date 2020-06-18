@@ -35,7 +35,7 @@ public class PlayerStatusUIManager : MonoBehaviour
             m_players.Remove(cli.guid);
         }
 
-        var clientsByScore = cur.clients.OrderByDescending(c => c.score).ToArray();
+        var clientsByScore = cur.clients.OrderByDescending(c => c.score).ThenBy(c => c.name).ToArray();
 
         for (var i = 0; i < clientsByScore.Length; i++)
         {

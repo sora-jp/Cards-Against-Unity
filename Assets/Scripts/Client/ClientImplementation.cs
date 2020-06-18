@@ -54,9 +54,9 @@ public class ClientImplementation : EventImplementor
         CardsClient.Instance.Send(MessageType.RpcPlayCard, c.CardDef);
     }
 
-    public void SetName(string name)
+    public void SetName(string newName)
     {
-        CardsClient.Instance.Send(MessageType.RpcSetName, new ClientName {Name = name});
+        CardsClient.Instance.Send(MessageType.RpcSetName, new ClientName {Name = newName});
     }
 
     [Message(MessageType.CmdRevealCard)]
@@ -77,41 +77,45 @@ public class ClientImplementation : EventImplementor
         m_guid = id.Guid;
     }
 
-    [Message(MessageType.CmdOnClientDisconnect)]
-    void ClientDisconnected(ClientData data)
-    {
-        OnOtherClientDisconnected?.Invoke(data);
-    }
-
-    [Message(MessageType.CmdOnClientConnected)]
-    void ClientConnected(ClientData data)
-    {
-        OnOtherClientConnected?.Invoke(data);
-    }
-
-    [Message(MessageType.CmdOnClientPlayedCard)]
-    void ClientPlayedCard(ClientIdentifier identifier)
-    {
-        OnClientPlayedCard?.Invoke(identifier.Guid);
-    }
-
     [Message(MessageType.CmdSyncGameState)]
     void SyncGameState(GameState state)
     {
         OnGameStateChanged?.Invoke(State, state);
+        var last = State;
+        var cur = state;
         State = state;
-    }
 
-    [Message(MessageType.CmdBeginVoting)]
-    void BeginVoting()
-    {
-        OnVotingBegin?.Invoke();
-    }
+        switch (cur.phase)
+        {
+            case GamePhase.Voting when last?.phase != GamePhase.Voting:
+                OnVotingBegin?.Invoke();
+                break;
+            case GamePhase.Playing when last?.phase != GamePhase.Playing:
+                OnNewRoundBegin?.Invoke();
+                break;
+            case GamePhase.Waiting when last?.phase != GamePhase.Waiting:
+            default:
+                break;
+        }
 
-    [Message(MessageType.CmdBeginNewRound)]
-    void BeginNewRound()
-    {
-        OnNewRoundBegin?.Invoke();
+        var clientsConnected = cur.clients.Except(last?.clients ?? Enumerable.Empty<ClientData>());
+        var clientsDisconnected = last?.clients.Except(cur.clients) ?? Enumerable.Empty<ClientData>();
+
+        foreach (var client in clientsDisconnected) OnOtherClientDisconnected?.Invoke(client);
+        foreach (var client in clientsConnected) OnOtherClientConnected?.Invoke(client);
+
+        foreach (var client in cur.clients)
+        {
+            int cardsPlayed;
+            if (last == null) cardsPlayed = client.currentCardAmt;
+            else if (!last.clients.Contains(client)) cardsPlayed = 0;
+            else cardsPlayed = client.currentCardAmt - last.clients.Single(c => c.guid == client.guid).currentCardAmt;
+
+            for (var i = 0; i < cardsPlayed; i++)
+            {
+                OnClientPlayedCard?.Invoke(client.guid);
+            }
+        }
     }
 
     [Message(MessageType.CmdDrawCard)]
@@ -120,10 +124,10 @@ public class ClientImplementation : EventImplementor
         OnDrawCard?.Invoke(card);
     }
 
-    [Message(MessageType.CmdHeartbeat)]
+    [Message(MessageType.Heartbeat)]
     void Heartbeat()
     {
-        CardsClient.Instance.Send(MessageType.RpcHeartbeatAck, new EmptyData(), false);
+        CardsClient.Instance.Send(MessageType.Heartbeat, new EmptyData(), false);
     }
 
     public ClientData ClientFromGuid(int cliGuid)

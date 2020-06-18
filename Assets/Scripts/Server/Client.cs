@@ -37,7 +37,7 @@ public class Client
 
     public void Heartbeat()
     {
-        CardsServer.Instance.Send(id, MessageType.CmdHeartbeat, new EmptyData(), false);
+        CardsServer.Instance.Send(id, MessageType.Heartbeat, new EmptyData(), false);
     }
 
     public void SendId()

@@ -14,11 +14,10 @@ public class ServerImplementation : EventImplementor
 {
     public static ServerImplementation Instance { get; private set; }
 
-    [SerializeField] readonly List<Client> m_clients = new List<Client>();
-    [SerializeField] CardCollection m_cards;
-    [SerializeField] readonly GameState m_state = new GameState();
-
-    public static event Action<Client, CardDefinition> OnCardPlayed; 
+    readonly List<Client> m_clients = new List<Client>();
+    readonly GameState m_state = new GameState();
+    CardPackList m_packs;
+    CardCollection m_cards;
 
     void Awake()
     {
@@ -31,7 +30,9 @@ public class ServerImplementation : EventImplementor
 
         Random.InitState(DateTime.Now.Millisecond);
 
-        m_cards = JsonConvert.DeserializeObject<CardCollection>(Resources.Load<TextAsset>("cards").text);
+        m_packs = JsonConvert.DeserializeObject<CardPackList>(Resources.Load<TextAsset>("cards").text, new JsonSerializerSettings {MissingMemberHandling = MissingMemberHandling.Ignore});
+        m_cards = m_packs.GetCollectionForPacks("Base");
+
         m_state.currentBlackCard = GetRandomCard(false);
         m_state.phase = GamePhase.Playing;
         m_state.clients = m_clients.Select(c => c.ToClientData()).ToList();
@@ -54,18 +55,12 @@ public class ServerImplementation : EventImplementor
 
     void OnClientDisconnect(int idx)
     {
-        CardsServer.Instance.SendAllExcept(idx, MessageType.CmdOnClientDisconnect, m_clients[idx].ToClientData());
         if (m_state.currentCzar == m_clients.Count - 1) m_state.currentCzar = idx; // Swap back changes last index to the index of the player being removed.
 
         m_clients.RemoveAtSwapBack(idx);
         UpdateClientIds();
 
-        m_state.clients = m_clients.Select(c => c.ToClientData()).ToList();
-
-        foreach (var client in m_clients)
-        {
-            client.SyncGameState(m_state);
-        }
+        SyncGameState();
 
         AdvanceToVotingIfDone();
     }
@@ -75,14 +70,10 @@ public class ServerImplementation : EventImplementor
         var cli = new Client(idx);
         m_clients.Insert(idx, cli);
         UpdateClientIds();
-        m_state.clients = m_clients.Select(c => c.ToClientData()).ToList();
         cli.SendId();
         cli.FillHand(10);
 
-        foreach (var client in m_clients)
-        {
-            client.SyncGameState(m_state);
-        }
+        SyncGameState();
     }
 
     void UpdateClientIds()
@@ -97,8 +88,7 @@ public class ServerImplementation : EventImplementor
     void OnClientSetName(ClientName name, int clientIdx)
     {
         m_clients[clientIdx].name = name.Name;
-        m_state.clients = m_clients.Select(c => c.ToClientData()).ToList();
-        foreach (var cli in m_clients) cli.SyncGameState(m_state);
+        SyncGameState();
     }
 
     [Message(MessageType.RpcVoteOnClient)]
@@ -119,22 +109,19 @@ public class ServerImplementation : EventImplementor
 
         m_state.currentBlackCard = GetRandomCard(false);
         m_state.phase = GamePhase.Playing;
-        m_state.clients = m_clients.Select(c => c.ToClientData()).ToList();
-        foreach (var cli in m_clients) cli.SyncGameState(m_state);
-        CardsServer.Instance.SendAll(MessageType.CmdBeginNewRound, new EmptyData());
+        SyncGameState();
     }
 
     [Message(MessageType.RpcPlayCard)]
     void ClientPlayedCard(CardDefinition card, int clientIdx)
     {
         var client = m_clients[clientIdx];
-#if !UNITY_EDITOR
         if (clientIdx == m_state.currentCzar)
         {
             Debug.LogError("SRV: Cannot play card, EISCZAR");
             return;
         }
-#endif
+
         if (!client.hand.Remove(card))
         {
             Debug.LogError("SRV: Cannot play card, ENOTINHAND");
@@ -154,9 +141,8 @@ public class ServerImplementation : EventImplementor
         }
 
         client.currentCards.Add(card);
-        OnCardPlayed?.Invoke(client, card);
 
-        CardsServer.Instance.SendAll(MessageType.CmdOnClientPlayedCard, new ClientIdentifier(client.guid));
+        SyncGameState();
         CardsServer.Instance.Send(clientIdx, MessageType.CmdRemoveCard, card);
 
         AdvanceToVotingIfDone();
@@ -184,10 +170,14 @@ public class ServerImplementation : EventImplementor
         if (everyoneDone)
         {
             m_state.phase = GamePhase.Voting;
-            m_state.clients = m_clients.Select(c => c.ToClientData()).ToList();
-            foreach (var client in m_clients) client.SyncGameState(m_state);
-            CardsServer.Instance.SendAll(MessageType.CmdBeginVoting, new EmptyData());
+            SyncGameState();
         }
+    }
+
+    void SyncGameState()
+    {
+        m_state.clients = m_clients.Select(c => c.ToClientData()).ToList();
+        m_clients.ForEach(c => c.SyncGameState(m_state));
     }
 
     public CardDefinition GetRandomCard(bool white)

@@ -1,20 +1,13 @@
 ﻿public enum MessageType
 {
+    Heartbeat,
+    RpcSetName,
     RpcPlayCard,
-    RpcVoteOnClient,
     RpcRevealCard,
-    CmdRevealCard,
-    CmdSetClientScore,
-    CmdDrawCard,
-    CmdSyncGameState,
-    CmdOnClientDisconnect,
-    CmdBeginVoting,
-    CmdOnClientPlayedCard,
+    RpcVoteOnClient,
     CmdSetGuid,
+    CmdDrawCard,
     CmdRemoveCard,
-    CmdBeginNewRound,
-    CmdOnClientConnected,
-    CmdHeartbeat,
-    RpcHeartbeatAck,
-    RpcSetName
+    CmdRevealCard,
+    CmdSyncGameState,
 }

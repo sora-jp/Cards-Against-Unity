@@ -26,7 +26,6 @@ public class CardCzarText : MonoBehaviour
         }
         else
         {
-            if (prev.CurrentCzarGuid == cur.CurrentCzarGuid) return;
             DOTween.To(a => m_slide.transition = a, m_slide.transition, target, 0.75f).SetEase(Ease.InOutCubic);
         }
     }

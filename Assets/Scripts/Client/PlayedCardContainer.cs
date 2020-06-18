@@ -11,7 +11,7 @@ public class PlayedCardContainer : MonoBehaviour
     void Awake()
     {
         m_clientToContainer = new Dictionary<int, Transform>();
-        ClientImplementation.OnGameStateChanged += SyncCardsWithGameState;
+        //ClientImplementation.OnGameStateChanged += SyncCardsWithGameState;
         ClientImplementation.OnClientPlayedCard += OnCardPlayed;
         ClientImplementation.OnNewRoundBegin += ClearContainers;
     }
@@ -19,35 +19,35 @@ public class PlayedCardContainer : MonoBehaviour
 
     void OnDestroy()
     {
-        ClientImplementation.OnGameStateChanged -= SyncCardsWithGameState;
+        //ClientImplementation.OnGameStateChanged -= SyncCardsWithGameState;
         ClientImplementation.OnClientPlayedCard -= OnCardPlayed;
         ClientImplementation.OnNewRoundBegin -= ClearContainers;
     }
 
-    void SyncCardsWithGameState(GameState prev, GameState cur)
-    {
-        foreach (var client in cur.clients)
-        {
-            if (client.currentCardAmt > 0)
-            {
-                var container = GetContainer(client);
-                for (var i = 0; i < client.currentCardAmt - (container.childCount - 1); i++)
-                {
-                    OnCardPlayed(client.guid);
-                }
+    //void SyncCardsWithGameState(GameState prev, GameState cur)
+    //{
+    //    foreach (var client in cur.clients)
+    //    {
+    //        if (client.currentCardAmt > 0)
+    //        {
+    //            var container = GetContainer(client);
+    //            for (var i = 0; i < client.currentCardAmt - (container.childCount - 1); i++)
+    //            {
+    //                OnCardPlayed(client.guid);
+    //            }
 
-                for (var i = 0; i < (container.childCount - 1) - client.currentCardAmt; i++)
-                {
-                    Destroy(container.GetChild(i+1).gameObject);
-                }
-            }
-            else
-            {
-                Destroy(GetContainer(client).gameObject);
-                m_clientToContainer.Remove(client.guid);
-            }
-        }
-    }
+    //            for (var i = 0; i < (container.childCount - 1) - client.currentCardAmt; i++)
+    //            {
+    //                Destroy(container.GetChild(i+1).gameObject);
+    //            }
+    //        }
+    //        else
+    //        {
+    //            Destroy(GetContainer(client).gameObject);
+    //            m_clientToContainer.Remove(client.guid);
+    //        }
+    //    }
+    //}
 
     void ClearContainers()
     {

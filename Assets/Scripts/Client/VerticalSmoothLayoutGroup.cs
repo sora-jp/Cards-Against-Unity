@@ -41,12 +41,6 @@ public class VerticalSmoothLayoutGroup : MonoBehaviour
         var wSlice = spacing;
         var wStart = -totalH / 2;
 
-        if (transform.childCount <= 1)
-        {
-            wSlice = 0;
-            wStart = 0;
-        }
-
         for (int i = 0; i < transform.childCount; i++)
         {
             var c = transform.GetChild(i);

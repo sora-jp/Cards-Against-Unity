@@ -106,7 +106,7 @@ public class CardsServer : MonoBehaviour
                         var id = stream.ReadByte();
                         stream.ReadBytes(data);
 
-                        if (id != (byte)MessageType.RpcHeartbeatAck)Debug.Log($"SRV: Received {(MessageType)id} from client {conn}");
+                        if (id != (byte)MessageType.Heartbeat)Debug.Log($"SRV: Received {(MessageType)id} from client {conn}");
                         OnDataReceived?.Invoke(new object[] {id, data.ToArray(), conn});
                     }
                     break;

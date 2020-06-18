@@ -5,9 +5,9 @@ using Newtonsoft.Json;
 public class CardPack
 {
     public string name;
-    [JsonIgnore] public string id;
-    [JsonIgnore] public List<CardDefinition> white;
-    [JsonIgnore] public List<CardDefinition> black;
+    [JsonProperty(PropertyName = "__unused_1")] [JsonIgnore] public string id;
+    [JsonProperty(PropertyName = "__unused_2")] [JsonIgnore] public List<CardDefinition> white;
+    [JsonProperty(PropertyName = "__unused_3")] [JsonIgnore] public List<CardDefinition> black;
 
     [JsonProperty(PropertyName = "white")] List<int> m_whiteIdx;
     [JsonProperty(PropertyName = "black")] List<int> m_blackIdx;

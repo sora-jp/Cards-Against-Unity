@@ -226,8 +226,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Sora
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: a5404e4696972174bace0c665911ca69, type: 2}
-  m_sharedMaterial: {fileID: 3708417312932413965, guid: a5404e4696972174bace0c665911ca69,
+  m_fontAsset: {fileID: 11400000, guid: ebec72ac25443434b9bac4bd158afc85, type: 2}
+  m_sharedMaterial: {fileID: 767482895443441637, guid: ebec72ac25443434b9bac4bd158afc85,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -466,7 +466,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 0
   m_fontSizeMax: 100
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 512
   m_textAlignment: 65535

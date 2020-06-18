@@ -16,7 +16,7 @@ public class CardPackList
     IDictionary<string, JToken> m_additionalData;
 
     [OnDeserialized]
-    void FillSets()
+    void FillSets(StreamingContext ctx)
     {
         Packs = new List<CardPack>();
 
