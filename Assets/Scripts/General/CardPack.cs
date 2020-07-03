@@ -2,7 +2,7 @@
 using System.Linq;
 using Newtonsoft.Json;
 
-public class CardPack
+public struct CardPack
 {
     public string name;
     [JsonProperty(PropertyName = "__unused_1")] [JsonIgnore] public string id;

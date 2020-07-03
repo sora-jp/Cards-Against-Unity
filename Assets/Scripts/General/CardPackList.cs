@@ -4,9 +4,9 @@ using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-public class CardPackList
+public struct CardPackList
 {
-    public List<CardPack> Packs;
+    public List<CardPack> packs;
 
     [JsonProperty(PropertyName = "whiteCards")] List<CardDefinition> m_whiteCards;
     [JsonProperty(PropertyName = "blackCards")] List<CardDefinition> m_blackCards;
@@ -18,7 +18,7 @@ public class CardPackList
     [OnDeserialized]
     void FillSets(StreamingContext ctx)
     {
-        Packs = new List<CardPack>();
+        packs = new List<CardPack>();
 
         foreach (var packId in m_packs)
         {
@@ -26,7 +26,7 @@ public class CardPackList
             pack.id = packId;
             pack.SetCards(m_whiteCards, m_blackCards);
 
-            Packs.Add(pack);
+            packs.Add(pack);
         }
     }
 
@@ -34,8 +34,8 @@ public class CardPackList
     {
         return new CardCollection
         {
-            whiteCards = Packs.Where(p => packs.Contains(p.id)).SelectMany(p => p.white).ToList(),
-            blackCards = Packs.Where(p => packs.Contains(p.id)).SelectMany(p => p.black).ToList()
+            whiteCards = this.packs.Where(p => packs.Contains(p.id)).SelectMany(p => p.white).ToList(),
+            blackCards = this.packs.Where(p => packs.Contains(p.id)).SelectMany(p => p.black).ToList()
         };
     }
 }

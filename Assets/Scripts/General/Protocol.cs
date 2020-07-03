@@ -5,6 +5,7 @@
     RpcPlayCard,
     RpcRevealCard,
     RpcVoteOnClient,
+    RpcUpdateSettings,
     CmdSetGuid,
     CmdDrawCard,
     CmdRemoveCard,

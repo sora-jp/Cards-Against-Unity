@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class PlayedCardContainer : MonoBehaviour
 {
     public CardContainerForPlayer subHolderPrefab;
-    public Card cardPrefab;
+    public PlayedCard cardPrefab;
 
     Dictionary<int, Transform> m_clientToContainer;
 
@@ -13,7 +14,7 @@ public class PlayedCardContainer : MonoBehaviour
         m_clientToContainer = new Dictionary<int, Transform>();
         //ClientImplementation.OnGameStateChanged += SyncCardsWithGameState;
         ClientImplementation.OnClientPlayedCard += OnCardPlayed;
-        ClientImplementation.OnNewRoundBegin += ClearContainers;
+        ClientImplementation.OnNewRoundBegin += NewRound;
     }
 
 
@@ -21,7 +22,7 @@ public class PlayedCardContainer : MonoBehaviour
     {
         //ClientImplementation.OnGameStateChanged -= SyncCardsWithGameState;
         ClientImplementation.OnClientPlayedCard -= OnCardPlayed;
-        ClientImplementation.OnNewRoundBegin -= ClearContainers;
+        ClientImplementation.OnNewRoundBegin -= NewRound;
     }
 
     //void SyncCardsWithGameState(GameState prev, GameState cur)
@@ -49,8 +50,14 @@ public class PlayedCardContainer : MonoBehaviour
     //    }
     //}
 
-    void ClearContainers()
+    void NewRound()
     {
+        var copy = Instantiate(this, transform.parent).gameObject;
+        Destroy(copy.GetComponent<PlayedCardContainer>());
+        copy.transform.SetSiblingIndex(transform.GetSiblingIndex() + 1);
+        copy.transform.DOLocalMoveX(-Screen.width, 1f).SetEase(Ease.InOutCubic)
+            .OnComplete(() => Destroy(copy));
+
         foreach (var pair in m_clientToContainer)
         {
             Destroy(pair.Value.gameObject);
@@ -63,6 +70,7 @@ public class PlayedCardContainer : MonoBehaviour
     {
         var container = GetContainer(ClientImplementation.Instance.ClientFromGuid(cliGuid));
         var card = Instantiate(cardPrefab, container);
+        card.AnimateCard();
         card.transform.localRotation = Quaternion.AngleAxis(180, Vector3.up);
     }
 

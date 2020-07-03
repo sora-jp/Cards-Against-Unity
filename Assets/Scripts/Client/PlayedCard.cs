@@ -15,8 +15,6 @@ public class PlayedCard : MonoBehaviour, IPointerDownHandler
     {
         m_group = GetComponent<CanvasGroup>();
         m_group.alpha = 1;
-        transform.localScale = new Vector3(0, 1, 1);
-        transform.DOScale(Vector3.one, 0.35f).SetEase(Ease.InOutQuad);
         m_card = GetComponent<Card>();
         ClientImplementation.OnRevealCard += RevealCard;
     }
@@ -29,6 +27,12 @@ public class PlayedCard : MonoBehaviour, IPointerDownHandler
     void Start()
     {
         m_parent = GetComponentInParent<CardContainerForPlayer>();
+    }
+
+    public void AnimateCard()
+    {
+        transform.localScale = new Vector3(0, 1, 1);
+        transform.DOScale(Vector3.one, 0.35f).SetEase(Ease.InOutQuad);
     }
 
     void RevealCard(RevealCardData data)

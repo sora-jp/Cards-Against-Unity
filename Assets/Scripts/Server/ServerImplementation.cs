@@ -30,7 +30,7 @@ public class ServerImplementation : EventImplementor
 
         Random.InitState(DateTime.Now.Millisecond);
 
-        m_packs = JsonConvert.DeserializeObject<CardPackList>(Resources.Load<TextAsset>("cards").text, new JsonSerializerSettings {MissingMemberHandling = MissingMemberHandling.Ignore});
+        m_packs = JsonConvert.DeserializeObject<CardPackList>(Resources.Load<TextAsset>("cards").text);
         m_cards = m_packs.GetCollectionForPacks("Base");
 
         m_state.currentBlackCard = GetRandomCard(false);
